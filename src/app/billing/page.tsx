@@ -80,18 +80,19 @@ export default function StandaloneBilling() {
 
   const upiString = `upi://pay?pa=9975379151@pthdfc&pn=SHREE%20JI%20COLLECTION&am=${grandTotal.toFixed(2)}&cu=INR`;
 
-  const handleCheckoutAndPrint = async () => {
+ const handleCheckoutAndPrint = async () => {
     if (cart.length === 0) return;
     
     setIsPrinting(true);
     setInvoiceCounter(prev => prev + 1);
 
     try {
-      // 1. Save main bill
+      // 1. Save the main bill details (including mandatory subtotal)
       const { data: billData, error: billError } = await supabase
         .from('bills')
         .insert([{ 
           customer_name: customerName || "Cash Customer", 
+          subtotal: subtotal || grandTotal, // Added subtotal field here
           total_amount: grandTotal 
         }])
         .select()
@@ -99,11 +100,11 @@ export default function StandaloneBilling() {
 
       if (billError) throw billError;
 
-      // 2. Save linked items (Using item.product_name to clear the type error)
+      // 2. Map your items to save them into the bill_items history table
       const itemsToInsert = cart.map(item => ({
         bill_id: billData.id,
         product_id: item.id,
-        product_name: item.product_name, // Changed from item.name to fix TS error
+        product_name: item.product_name,
         quantity: item.quantity,
         price: item.price
       }));
@@ -114,9 +115,11 @@ export default function StandaloneBilling() {
 
       if (itemsError) throw itemsError;
 
-      // 3. Trigger Print
+      // 3. Trigger print popup window after successful save
       setTimeout(() => {
         window.print();
+        
+        // 4. Reset state parameters for the next transaction
         setCart([]);
         setCustomerName('Cash Customer');
         if (typeof setCustomerMobile === 'function') setCustomerMobile('');
@@ -125,8 +128,8 @@ export default function StandaloneBilling() {
       }, 400);
 
     } catch (error) {
-      console.error("Database sync failed:", error);
-      alert("Failed to save bill history.");
+      console.error("Database connection failure:", error);
+      alert("Failed to save bill history to database.");
     } finally {
       setIsPrinting(false);
     }
