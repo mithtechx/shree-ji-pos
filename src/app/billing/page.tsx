@@ -82,18 +82,54 @@ export default function StandaloneBilling() {
 
   const handleCheckoutAndPrint = async () => {
     if (cart.length === 0) return;
+    
     setIsPrinting(true);
     setInvoiceCounter(prev => prev + 1);
 
-    setTimeout(() => {
-      window.print();
-      setCart([]);
-      setCustomerName('Cash Customer');
-      setCustomerMobile('');
-      setDiscountPercent(0);
-      setCustomDiscount(0);
+    try {
+      // 1. Save main bill
+      const { data: billData, error: billError } = await supabase
+        .from('bills')
+        .insert([{ 
+          customer_name: customerName || "Cash Customer", 
+          total_amount: grandTotal 
+        }])
+        .select()
+        .single();
+
+      if (billError) throw billError;
+
+      // 2. Save linked items (Using item.product_name to clear the type error)
+      const itemsToInsert = cart.map(item => ({
+        bill_id: billData.id,
+        product_id: item.id,
+        product_name: item.product_name, // Changed from item.name to fix TS error
+        quantity: item.quantity,
+        price: item.price
+      }));
+
+      const { error: itemsError } = await supabase
+        .from('bill_items')
+        .insert(itemsToInsert);
+
+      if (itemsError) throw itemsError;
+
+      // 3. Trigger Print
+      setTimeout(() => {
+        window.print();
+        setCart([]);
+        setCustomerName('Cash Customer');
+        if (typeof setCustomerMobile === 'function') setCustomerMobile('');
+        if (typeof setDiscountPercent === 'function') setDiscountPercent(0);
+        if (typeof setCustomDiscount === 'function') setCustomDiscount(0);
+      }, 400);
+
+    } catch (error) {
+      console.error("Database sync failed:", error);
+      alert("Failed to save bill history.");
+    } finally {
       setIsPrinting(false);
-    }, 400);
+    }
   };
 
   return (
