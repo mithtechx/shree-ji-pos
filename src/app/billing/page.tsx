@@ -81,56 +81,77 @@ export default function StandaloneBilling() {
   const upiString = `upi://pay?pa=9975379151@pthdfc&pn=SHREE%20JI%20COLLECTION&am=${grandTotal.toFixed(2)}&cu=INR`;
 
 const handleCheckoutAndPrint = async () => {
-    if (cart.length === 0) return;
+    if (cart.length === 0) {
+      alert("Your cart is empty!");
+      return;
+    }
     
     setIsPrinting(true);
     setInvoiceCounter(prev => prev + 1);
 
     try {
-      // 1. Save the main bill using the database's exact expected column names
+      // 1. Gather all calculated metrics for safety fallback mapping
+      const currentSubtotal = subtotal || grandTotal || 0;
+      const currentGrandTotal = grandTotal || 0;
+      const currentCustomer = customerName || "Cash Customer";
+
+      console.log("Attempting database upload payload:", {
+        customer_name: currentCustomer,
+        subtotal: currentSubtotal,
+        grand_total: currentGrandTotal,
+        total_amount: currentGrandTotal
+      });
+
+      // 2. Safely commit data matching every known schema naming variation
       const { data: billData, error: billError } = await supabase
         .from('bills')
         .insert([{ 
-          customer_name: customerName || "Cash Customer", 
-          subtotal: subtotal || grandTotal,
-          grand_total: grandTotal, // Explicitly named field to clear the constraint
-          total_amount: grandTotal // Keeping this as a fallback parameter
+          customer_name: currentCustomer, 
+          subtotal: currentSubtotal,
+          grand_total: currentGrandTotal,
+          total_amount: currentGrandTotal
         }])
         .select()
         .single();
 
-      if (billError) throw billError;
+      if (billError) {
+        console.error("Supabase Bill Rejection Log:", billError);
+        throw billError;
+      }
 
-      // 2. Map your items to save them into the bill_items history table
+      // 3. Assemble and map cart item details array matching your column schema properties
       const itemsToInsert = cart.map(item => ({
         bill_id: billData.id,
         product_id: item.id,
-        product_name: item.product_name,
-        quantity: item.quantity,
-        price: item.price
+        product_name: item.product_name || item.product_name || "Garment Item",
+        quantity: parseInt(String(item.quantity)) || 1,
+        price: parseFloat(String(item.price)) || 0
       }));
 
       const { error: itemsError } = await supabase
         .from('bill_items')
         .insert(itemsToInsert);
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error("Supabase Bill Items Rejection Log:", itemsError);
+        throw itemsError;
+      }
 
-      // 3. Trigger print popup window after successful save
+      // 4. Fire print layout after verified write sequence
       setTimeout(() => {
         window.print();
         
-        // 4. Reset state parameters for the next transaction
+        // Clear working transaction cache parameters
         setCart([]);
         setCustomerName('Cash Customer');
         if (typeof setCustomerMobile === 'function') setCustomerMobile('');
         if (typeof setDiscountPercent === 'function') setDiscountPercent(0);
         if (typeof setCustomDiscount === 'function') setCustomDiscount(0);
-      }, 400);
+      }, 350);
 
-    } catch (error) {
-      console.error("Database connection failure:", error);
-      alert("Failed to save bill history to database.");
+    } catch (error: any) {
+      console.error("Complete processing failure context:", error);
+      alert(`Checkout failed: ${error?.message || "Check developer console for table constraints"}`);
     } finally {
       setIsPrinting(false);
     }
