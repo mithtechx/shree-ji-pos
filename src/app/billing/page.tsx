@@ -80,20 +80,21 @@ export default function StandaloneBilling() {
 
   const upiString = `upi://pay?pa=9975379151@pthdfc&pn=SHREE%20JI%20COLLECTION&am=${grandTotal.toFixed(2)}&cu=INR`;
 
- const handleCheckoutAndPrint = async () => {
+const handleCheckoutAndPrint = async () => {
     if (cart.length === 0) return;
     
     setIsPrinting(true);
     setInvoiceCounter(prev => prev + 1);
 
     try {
-      // 1. Save the main bill details (including mandatory subtotal)
+      // 1. Save the main bill using the database's exact expected column names
       const { data: billData, error: billError } = await supabase
         .from('bills')
         .insert([{ 
           customer_name: customerName || "Cash Customer", 
-          subtotal: subtotal || grandTotal, // Added subtotal field here
-          total_amount: grandTotal 
+          subtotal: subtotal || grandTotal,
+          grand_total: grandTotal, // Explicitly named field to clear the constraint
+          total_amount: grandTotal // Keeping this as a fallback parameter
         }])
         .select()
         .single();
