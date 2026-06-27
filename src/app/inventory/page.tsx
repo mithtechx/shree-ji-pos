@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Plus, Tags, Search, RefreshCw, Barcode } from 'lucide-react';
+import { Plus, Tags, Search, RefreshCw, Barcode, Trash2 } from 'lucide-react';
 
 interface Product {
   id?: string;
@@ -82,6 +82,46 @@ export default function InventoryManagement() {
       setStock('');
       fetchProducts(); // Refresh list instantly
       alert("Product safely uploaded to Shree Ji Cloud Inventory!");
+    }
+  };
+
+  // NEW ACTION 1: Update Product Stock Level Directly
+  const handleUpdateStock = async (productId: string, newStockLevel: number) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ stock: newStockLevel })
+        .eq('id', productId);
+
+      if (error) throw error;
+      
+      // Update local state arrays without needing full network payload roundtrips
+      setProducts(prev => prev.map(p => p.id === productId ? { ...p, stock: newStockLevel } : p));
+    } catch (error: any) {
+      console.error("Failed to alter stock quantities:", error);
+      alert("Could not update product stock level: " + error.message);
+    }
+  };
+
+  // NEW ACTION 2: Permanently Delete Product
+  const handleDeleteProduct = async (productId: string, productName: string) => {
+    const confirmDelete = confirm(`Are you absolutely sure you want to permanently delete "${productName}" from inventory?`);
+    if (!confirmDelete) return;
+
+    try {
+      const { error } = await supabase
+        .from('products')
+        .delete()
+        .eq('id', productId);
+
+      if (error) throw error;
+
+      // Filter deleted product out of view state array instantly
+      setProducts(prev => prev.filter(p => p.id !== productId));
+      alert("Product successfully removed.");
+    } catch (error: any) {
+      console.error("Item removal sequence caught an error:", error);
+      alert("Failed to delete product: " + error.message);
     }
   };
 
@@ -182,20 +222,21 @@ export default function InventoryManagement() {
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             </div>
 
-            <div className="border rounded-xl overflow-hidden max-h-[400px] overflow-y-auto">
+            <div className="border rounded-xl overflow-hidden max-h-[440px] overflow-y-auto">
               <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-50 text-[10px] font-bold uppercase text-slate-500 border-b sticky top-0">
+                <thead className="bg-slate-50 text-[10px] font-bold uppercase text-slate-500 border-b sticky top-0 z-10">
                   <tr>
                     <th className="p-3">Product Profile</th>
                     <th className="p-3 text-center">Size/Color</th>
                     <th className="p-3 text-right">Price</th>
                     <th className="p-3 text-center">Available Stock</th>
+                    <th className="p-3 text-center">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="text-xs divide-y text-black font-medium bg-white">
                   {filteredProducts.length === 0 ? (
                     <tr>
-                      <td colSpan={4} className="py-8 text-center text-slate-400 font-normal">No registered products matched this search phrase.</td>
+                      <td colSpan={5} className="py-8 text-center text-slate-400 font-normal">No registered products matched this search phrase.</td>
                     </tr>
                   ) : (
                     filteredProducts.map(p => (
@@ -207,9 +248,36 @@ export default function InventoryManagement() {
                         <td className="p-3 text-center text-slate-600">{p.size} / {p.color}</td>
                         <td className="p-3 text-right font-bold text-slate-900">₹{Number(p.price).toFixed(2)}</td>
                         <td className="p-3 text-center">
-                          <span className={`px-2 py-1 rounded-md text-[10px] font-bold ${p.stock > 10 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
+                          <span className={`px-2 py-1 rounded-md text-[10px] font-bold block w-fit mx-auto ${p.stock > 10 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
                             {p.stock} Pcs
                           </span>
+                        </td>
+                        <td className="p-3 text-center flex items-center justify-center gap-1.5 whitespace-nowrap">
+                          {/* Add 10 Stock */}
+                          <button 
+                            onClick={() => p.id && handleUpdateStock(p.id, (p.stock || 0) + 10)}
+                            className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-2 py-1 rounded-md text-[10px] font-bold transition border border-emerald-200"
+                          >
+                            +10
+                          </button>
+                          
+                          {/* Subtract 1 Stock */}
+                          <button 
+                            onClick={() => p.id && handleUpdateStock(p.id, Math.max(0, (p.stock || 0) - 1))}
+                            disabled={(p.stock || 0) <= 0}
+                            className="bg-amber-50 text-amber-600 hover:bg-amber-100 disabled:bg-slate-100 disabled:text-slate-400 px-2 py-1 rounded-md text-[10px] font-bold transition border border-amber-200"
+                          >
+                            -1
+                          </button>
+
+                          {/* Delete Product */}
+                          <button 
+                            onClick={() => p.id && handleDeleteProduct(p.id, p.product_name)}
+                            className="bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white p-1 rounded-md transition border border-rose-200"
+                            title="Delete Product"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
                         </td>
                       </tr>
                     ))
