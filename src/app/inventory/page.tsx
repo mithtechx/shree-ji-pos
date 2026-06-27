@@ -85,8 +85,10 @@ export default function InventoryManagement() {
     }
   };
 
-  // NEW ACTION 1: Update Product Stock Level Directly
-  const handleUpdateStock = async (productId: string, newStockLevel: number) => {
+  // ACTION 1: Update Product Stock Level Directly
+  const handleUpdateStock = async (productId: string, currentStock: number, adjustment: number) => {
+    const newStockLevel = Math.max(0, currentStock + adjustment);
+    
     try {
       const { error } = await supabase
         .from('products')
@@ -95,7 +97,7 @@ export default function InventoryManagement() {
 
       if (error) throw error;
       
-      // Update local state arrays without needing full network payload roundtrips
+      // Update local state array to refresh the UI immediately
       setProducts(prev => prev.map(p => p.id === productId ? { ...p, stock: newStockLevel } : p));
     } catch (error: any) {
       console.error("Failed to alter stock quantities:", error);
@@ -103,7 +105,7 @@ export default function InventoryManagement() {
     }
   };
 
-  // NEW ACTION 2: Permanently Delete Product
+  // ACTION 2: Permanently Delete Product
   const handleDeleteProduct = async (productId: string, productName: string) => {
     const confirmDelete = confirm(`Are you absolutely sure you want to permanently delete "${productName}" from inventory?`);
     if (!confirmDelete) return;
@@ -118,10 +120,9 @@ export default function InventoryManagement() {
 
       // Filter deleted product out of view state array instantly
       setProducts(prev => prev.filter(p => p.id !== productId));
-      alert("Product successfully removed.");
     } catch (error: any) {
       console.error("Item removal sequence caught an error:", error);
-      alert("Failed to delete product: " + error.message);
+      alert("Failed to delete product. Note: Items attached to old bill histories cannot be deleted.");
     }
   };
 
@@ -252,32 +253,34 @@ export default function InventoryManagement() {
                             {p.stock} Pcs
                           </span>
                         </td>
-                        <td className="p-3 text-center flex items-center justify-center gap-1.5 whitespace-nowrap">
-                          {/* Add 10 Stock */}
-                          <button 
-                            onClick={() => p.id && handleUpdateStock(p.id, (p.stock || 0) + 10)}
-                            className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-2 py-1 rounded-md text-[10px] font-bold transition border border-emerald-200"
-                          >
-                            +10
-                          </button>
-                          
-                          {/* Subtract 1 Stock */}
-                          <button 
-                            onClick={() => p.id && handleUpdateStock(p.id, Math.max(0, (p.stock || 0) - 1))}
-                            disabled={(p.stock || 0) <= 0}
-                            className="bg-amber-50 text-amber-600 hover:bg-amber-100 disabled:bg-slate-100 disabled:text-slate-400 px-2 py-1 rounded-md text-[10px] font-bold transition border border-amber-200"
-                          >
-                            -1
-                          </button>
+                        <td className="p-3 text-center">
+                          <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
+                            {/* Add 10 Stock */}
+                            <button 
+                              onClick={() => p.id && handleUpdateStock(p.id, Number(p.stock || 0), 10)}
+                              className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-2 py-1 rounded-md text-[10px] font-bold transition border border-emerald-200"
+                            >
+                              +10
+                            </button>
+                            
+                            {/* Subtract 1 Stock */}
+                            <button 
+                              onClick={() => p.id && handleUpdateStock(p.id, Number(p.stock || 0), -1)}
+                              disabled={(p.stock || 0) <= 0}
+                              className="bg-amber-50 text-amber-600 hover:bg-amber-100 disabled:bg-slate-100 disabled:text-slate-400 px-2 py-1 rounded-md text-[10px] font-bold transition border border-amber-200"
+                            >
+                              -1
+                            </button>
 
-                          {/* Delete Product */}
-                          <button 
-                            onClick={() => p.id && handleDeleteProduct(p.id, p.product_name)}
-                            className="bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white p-1 rounded-md transition border border-rose-200"
-                            title="Delete Product"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                            {/* Delete Product */}
+                            <button 
+                              onClick={() => p.id && handleDeleteProduct(p.id, p.product_name)}
+                              className="bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white p-1 rounded-md transition border border-rose-200"
+                              title="Delete Product"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))
