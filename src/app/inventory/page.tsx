@@ -73,19 +73,18 @@ export default function InventoryManagement() {
     if (error) {
       alert("Error saving item: " + error.message);
     } else {
-      // Clear forms on success
       setName('');
       setCode('');
       setBarcode('');
       setColor('');
       setPrice('');
       setStock('');
-      fetchProducts(); // Refresh list instantly
+      fetchProducts();
       alert("Product safely uploaded to Shree Ji Cloud Inventory!");
     }
   };
 
-  // ACTION 1: Update Product Stock Level Directly
+  // Direct Quantities Delta Mutator
   const handleUpdateStock = async (productId: string, currentStock: number, adjustment: number) => {
     const newStockLevel = Math.max(0, currentStock + adjustment);
     
@@ -97,7 +96,7 @@ export default function InventoryManagement() {
 
       if (error) throw error;
       
-      // Update local state array to refresh the UI immediately
+      // Instantly modify state logic in UI
       setProducts(prev => prev.map(p => p.id === productId ? { ...p, stock: newStockLevel } : p));
     } catch (error: any) {
       console.error("Failed to alter stock quantities:", error);
@@ -105,7 +104,7 @@ export default function InventoryManagement() {
     }
   };
 
-  // ACTION 2: Permanently Delete Product
+  // Permanent Delete Removal Call
   const handleDeleteProduct = async (productId: string, productName: string) => {
     const confirmDelete = confirm(`Are you absolutely sure you want to permanently delete "${productName}" from inventory?`);
     if (!confirmDelete) return;
@@ -117,16 +116,13 @@ export default function InventoryManagement() {
         .eq('id', productId);
 
       if (error) throw error;
-
-      // Filter deleted product out of view state array instantly
       setProducts(prev => prev.filter(p => p.id !== productId));
     } catch (error: any) {
       console.error("Item removal sequence caught an error:", error);
-      alert("Failed to delete product. Note: Items attached to old bill histories cannot be deleted.");
+      alert("Failed to delete product. Note: Items attached to historical invoices cannot be dropped.");
     }
   };
 
-  // Filter list based on search query
   const filteredProducts = products.filter(p => 
     p.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.barcode.includes(searchQuery)
@@ -144,7 +140,7 @@ export default function InventoryManagement() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Form: Add New Items */}
+        {/* Left Form Panel */}
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm h-fit">
           <h3 className="text-sm font-black text-slate-700 uppercase tracking-wider mb-4 flex items-center gap-1.5">
             <Plus className="w-4 h-4 text-blue-600"/> Add Clothing Item
@@ -215,23 +211,24 @@ export default function InventoryManagement() {
           </form>
         </div>
 
-        {/* Right Table: Search and View existing item stock profiles */}
-        <div className="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+        {/* Right Data Grid with Overflow Safety Protection */}
+        <div className="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between overflow-hidden">
           <div className="space-y-4">
             <div className="relative">
               <input type="text" placeholder="Search by item description name or flash barcode query..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="w-full pl-9 pr-4 py-2 border rounded-xl bg-slate-50 text-xs font-medium text-black focus:outline-none focus:bg-white"/>
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             </div>
 
-            <div className="border rounded-xl overflow-hidden max-h-[440px] overflow-y-auto">
-              <table className="w-full text-left border-collapse">
+            {/* CRITICAL CHANGE: Added overflow-x-auto to make the table scroll horizontally if needed */}
+            <div className="border rounded-xl overflow-x-auto max-h-[460px] overflow-y-auto style-scrollbar">
+              <table className="w-full text-left border-collapse min-w-[600px]">
                 <thead className="bg-slate-50 text-[10px] font-bold uppercase text-slate-500 border-b sticky top-0 z-10">
                   <tr>
-                    <th className="p-3">Product Profile</th>
+                    <th className="p-3 min-w-[180px]">Product Profile</th>
                     <th className="p-3 text-center">Size/Color</th>
                     <th className="p-3 text-right">Price</th>
                     <th className="p-3 text-center">Available Stock</th>
-                    <th className="p-3 text-center">Actions</th>
+                    <th className="p-3 text-center min-w-[140px]">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="text-xs divide-y text-black font-medium bg-white">
@@ -253,29 +250,32 @@ export default function InventoryManagement() {
                             {p.stock} Pcs
                           </span>
                         </td>
-                        <td className="p-3 text-center">
-                          <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
-                            {/* Add 10 Stock */}
+                        <td className="p-3">
+                          <div className="flex items-center justify-center gap-2">
+                            {/* Restock Inline Button */}
                             <button 
+                              type="button"
                               onClick={() => p.id && handleUpdateStock(p.id, Number(p.stock || 0), 10)}
-                              className="bg-emerald-50 text-emerald-600 hover:bg-emerald-100 px-2 py-1 rounded-md text-[10px] font-bold transition border border-emerald-200"
+                              className="bg-emerald-600 text-white hover:bg-emerald-700 px-2.5 py-1 rounded-md text-[11px] font-black shadow-sm transition"
                             >
                               +10
                             </button>
                             
-                            {/* Subtract 1 Stock */}
+                            {/* Reduce Inline Button */}
                             <button 
+                              type="button"
                               onClick={() => p.id && handleUpdateStock(p.id, Number(p.stock || 0), -1)}
                               disabled={(p.stock || 0) <= 0}
-                              className="bg-amber-50 text-amber-600 hover:bg-amber-100 disabled:bg-slate-100 disabled:text-slate-400 px-2 py-1 rounded-md text-[10px] font-bold transition border border-amber-200"
+                              className="bg-amber-500 text-white hover:bg-amber-600 disabled:bg-slate-200 disabled:text-slate-400 px-2.5 py-1 rounded-md text-[11px] font-black shadow-sm transition"
                             >
                               -1
                             </button>
 
-                            {/* Delete Product */}
+                            {/* Drop Row Item */}
                             <button 
+                              type="button"
                               onClick={() => p.id && handleDeleteProduct(p.id, p.product_name)}
-                              className="bg-rose-50 text-rose-600 hover:bg-rose-500 hover:text-white p-1 rounded-md transition border border-rose-200"
+                              className="bg-rose-100 text-rose-600 hover:bg-rose-600 hover:text-white p-1.5 rounded-md transition border border-rose-200"
                               title="Delete Product"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
