@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import { supabase } from './lib/supabase';
 import { ShoppingBag, Tags, History, AlertCircle, TrendingUp } from 'lucide-react';
 
+export const revalidate = 0; // forces dashboard to fetch brand new data on every single page load 
+
 export default function Dashboard() {
   const router = useRouter();
   const [totalProducts, setTotalProducts] = useState(0);
@@ -15,9 +17,22 @@ export default function Dashboard() {
       const { count } = await supabase.from('products').select('*', { count: 'exact', head: true });
       setTotalProducts(count || 0);
 
-      const { data } = await supabase.from('bills').select('grand_total');
+      // 1. Get the 24-hour window for the current local day
+      const startOfToday = new Date();
+      startOfToday.setHours(0, 0, 0, 0);
+
+      const endOfToday = new Date();
+      endOfToday.setHours(23, 59, 59, 999);
+
+      // 2. Query only the bills generated today
+      const { data } = await supabase
+        .from('bills')
+        .select('grand_total')
+        .gte('created_at', startOfToday.toISOString())
+        .lte('created_at', endOfToday.toISOString());
+
       if (data) {
-        setTodaySales(data.reduce((sum, b) => sum + Number(b.grand_total), 0));
+        setTodaySales(data.reduce((sum, b) => sum + Number(b.grand_total || 0), 0));
       }
     }
     loadStats();
