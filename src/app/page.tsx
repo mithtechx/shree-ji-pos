@@ -14,22 +14,33 @@ export default function Dashboard() {
 
   useEffect(() => {
     async function loadStats() {
+      // 1. Fetch total products count profile
       const { count } = await supabase.from('products').select('*', { count: 'exact', head: true });
       setTotalProducts(count || 0);
 
-      // 1. Get the 24-hour window for the current local day
-      const startOfToday = new Date();
-      startOfToday.setHours(0, 0, 0, 0);
+      // 2. Generate local calendar boundaries (Bypasses UTC offsets blockages)
+      const now = new Date();
+      
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const day = String(now.getDate()).padStart(2, '0');
+      
+      // Creates a clean YYYY-MM-DD local calendar date string
+      const localTodayDate = `${year}-${month}-${day}`;
 
-      const endOfToday = new Date();
-      endOfToday.setHours(23, 59, 59, 999);
+      console.log("Filtering billing ledger against active local date:", localTodayDate);
 
-      // 2. Query only the bills generated today
-      const { data } = await supabase
+      // 3. Query bills generated explicitly on this calendar date 
+      const { data, error } = await supabase
         .from('bills')
         .select('grand_total')
-        .gte('created_at', startOfToday.toISOString())
-        .lte('created_at', endOfToday.toISOString());
+        .gte('created_at', `${localTodayDate}T00:00:00`)
+        .lte('created_at', `${localTodayDate}T23:59:59`);
+
+      if (error) {
+        console.error("Supabase stats aggregation caught an error:", error);
+        return;
+      }
 
       if (data) {
         setTodaySales(data.reduce((sum, b) => sum + Number(b.grand_total || 0), 0));
@@ -69,7 +80,7 @@ export default function Dashboard() {
             <div>
               <span className="text-slate-400 text-xs font-bold uppercase tracking-wider block mb-1">Today's Sales</span>
               <span className="text-3xl font-black text-emerald-600">₹{todaySales.toFixed(2)}</span>
-              <span className="text-xs text-emerald-500 block mt-1">Total sales today</span>
+              <span className="text-xs text-emerald-500 block mt-1">Resets automatically at midnight</span>
             </div>
             <div className="p-3 bg-emerald-50 text-emerald-600 rounded-xl"><TrendingUp className="w-6 h-6"/></div>
           </div>
@@ -92,6 +103,7 @@ export default function Dashboard() {
         <h3 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           <button 
+            type="button"
             onClick={() => router.push('/inventory')}
             className="p-5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-2xl shadow-sm text-left flex flex-col justify-between h-32 transition group"
           >
@@ -103,6 +115,7 @@ export default function Dashboard() {
           </button>
 
           <button 
+            type="button"
             onClick={() => router.push('/billing')}
             className="p-5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-sm text-left flex flex-col justify-between h-32 transition group"
           >
@@ -114,6 +127,7 @@ export default function Dashboard() {
           </button>
 
           <button 
+            type="button"
             onClick={() => router.push('/history')}
             className="p-5 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-2xl shadow-sm text-left flex flex-col justify-between h-32 transition group"
           >
