@@ -96,10 +96,9 @@ export default function InventoryManagement() {
 
       if (error) throw error;
       
-      // Instantly modify state logic in UI
+      // Instantly updates UI array state locally
       setProducts(prev => prev.map(p => p.id === productId ? { ...p, stock: newStockLevel } : p));
     } catch (error: any) {
-      console.error("Failed to alter stock quantities:", error);
       alert("Could not update product stock level: " + error.message);
     }
   };
@@ -118,8 +117,7 @@ export default function InventoryManagement() {
       if (error) throw error;
       setProducts(prev => prev.filter(p => p.id !== productId));
     } catch (error: any) {
-      console.error("Item removal sequence caught an error:", error);
-      alert("Failed to delete product. Note: Items attached to historical invoices cannot be dropped.");
+      alert("Failed to delete product. Note: Items attached to old invoices cannot be deleted.");
     }
   };
 
@@ -211,7 +209,7 @@ export default function InventoryManagement() {
           </form>
         </div>
 
-        {/* Right Data Grid with Overflow Safety Protection */}
+        {/* Right Data Grid with High Contrast Structural Layout Row Matrix */}
         <div className="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between overflow-hidden">
           <div className="space-y-4">
             <div className="relative">
@@ -219,74 +217,63 @@ export default function InventoryManagement() {
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
             </div>
 
-            {/* CRITICAL CHANGE: Added overflow-x-auto to make the table scroll horizontally if needed */}
-            <div className="border rounded-xl overflow-x-auto max-h-[460px] overflow-y-auto style-scrollbar">
-              <table className="w-full text-left border-collapse min-w-[600px]">
-                <thead className="bg-slate-50 text-[10px] font-bold uppercase text-slate-500 border-b sticky top-0 z-10">
-                  <tr>
-                    <th className="p-3 min-w-[180px]">Product Profile</th>
-                    <th className="p-3 text-center">Size/Color</th>
-                    <th className="p-3 text-right">Price</th>
-                    <th className="p-3 text-center">Available Stock</th>
-                    <th className="p-3 text-center min-w-[140px]">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="text-xs divide-y text-black font-medium bg-white">
-                  {filteredProducts.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="py-8 text-center text-slate-400 font-normal">No registered products matched this search phrase.</td>
-                    </tr>
-                  ) : (
-                    filteredProducts.map(p => (
-                      <tr key={p.id} className="hover:bg-slate-50/80">
-                        <td className="p-3">
-                          <p className="font-bold text-slate-800">{p.product_name}</p>
-                          <p className="text-[10px] text-slate-400 font-mono">Barcode: {p.barcode}</p>
-                        </td>
-                        <td className="p-3 text-center text-slate-600">{p.size} / {p.color}</td>
-                        <td className="p-3 text-right font-bold text-slate-900">₹{Number(p.price).toFixed(2)}</td>
-                        <td className="p-3 text-center">
-                          <span className={`px-2 py-1 rounded-md text-[10px] font-bold block w-fit mx-auto ${p.stock > 10 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-700 border border-rose-200'}`}>
-                            {p.stock} Pcs
-                          </span>
-                        </td>
-                        <td className="p-3">
-                          <div className="flex items-center justify-center gap-2">
-                            {/* Restock Inline Button */}
-                            <button 
-                              type="button"
-                              onClick={() => p.id && handleUpdateStock(p.id, Number(p.stock || 0), 10)}
-                              className="bg-emerald-600 text-white hover:bg-emerald-700 px-2.5 py-1 rounded-md text-[11px] font-black shadow-sm transition"
-                            >
-                              +10
-                            </button>
-                            
-                            {/* Reduce Inline Button */}
-                            <button 
-                              type="button"
-                              onClick={() => p.id && handleUpdateStock(p.id, Number(p.stock || 0), -1)}
-                              disabled={(p.stock || 0) <= 0}
-                              className="bg-amber-500 text-white hover:bg-amber-600 disabled:bg-slate-200 disabled:text-slate-400 px-2.5 py-1 rounded-md text-[11px] font-black shadow-sm transition"
-                            >
-                              -1
-                            </button>
+            <div className="border rounded-xl overflow-hidden max-h-[480px] overflow-y-auto">
+              {/* Header Label Bar */}
+              <div className="bg-slate-50 border-b p-3 text-[10px] font-bold uppercase text-slate-500 grid grid-cols-12 gap-2 sticky top-0 z-10">
+                <div className="col-span-4">Product Profile</div>
+                <div className="col-span-2 text-center">Size/Color</div>
+                <div className="col-span-2 text-right">Price</div>
+                <div className="col-span-2 text-center">Stock</div>
+                <div className="col-span-2 text-center">Actions</div>
+              </div>
 
-                            {/* Drop Row Item */}
-                            <button 
-                              type="button"
-                              onClick={() => p.id && handleDeleteProduct(p.id, p.product_name)}
-                              className="bg-rose-100 text-rose-600 hover:bg-rose-600 hover:text-white p-1.5 rounded-md transition border border-rose-200"
-                              title="Delete Product"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+              {/* Data Items List */}
+              <div className="divide-y divide-slate-100 bg-white text-xs text-black font-medium">
+                {filteredProducts.length === 0 ? (
+                  <div className="py-8 text-center text-slate-400 font-normal">No registered products matched this search phrase.</div>
+                ) : (
+                  filteredProducts.map(p => (
+                    <div key={p.id} className="p-3 grid grid-cols-12 gap-2 items-center hover:bg-slate-50/80">
+                      <div className="col-span-4">
+                        <p className="font-bold text-slate-800 truncate">{p.product_name}</p>
+                        <p className="text-[10px] text-slate-400 font-mono">Barcode: {p.barcode}</p>
+                      </div>
+                      <div className="col-span-2 text-center text-slate-600 truncate">{p.size} / {p.color}</div>
+                      <div className="col-span-2 text-right font-bold text-slate-900">₹{Number(p.price).toFixed(2)}</div>
+                      <div className="col-span-2 text-center">
+                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold inline-block ${p.stock > 10 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
+                          {p.stock} Pcs
+                        </span>
+                      </div>
+                      <div className="col-span-2 flex items-center justify-center gap-1">
+                        <button 
+                          type="button"
+                          onClick={() => p.id && handleUpdateStock(p.id, Number(p.stock || 0), 10)}
+                          className="bg-emerald-600 text-white hover:bg-emerald-700 w-7 h-6 rounded flex items-center justify-center text-[10px] font-black shadow-sm transition"
+                        >
+                          +10
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => p.id && handleUpdateStock(p.id, Number(p.stock || 0), -1)}
+                          disabled={(p.stock || 0) <= 0}
+                          className="bg-amber-500 text-white hover:bg-amber-600 disabled:bg-slate-200 disabled:text-slate-400 w-7 h-6 rounded flex items-center justify-center text-[10px] font-black shadow-sm transition"
+                        >
+                          -1
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => p.id && handleDeleteProduct(p.id, p.product_name)}
+                          className="bg-rose-50 text-rose-600 hover:bg-rose-600 hover:text-white p-1 rounded transition border border-rose-200"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
             </div>
           </div>
         </div>
