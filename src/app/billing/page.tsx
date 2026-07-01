@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import ThermalReceipt from '../components/ThermalReceipt';
-import { QRCodeSVG } from 'qrcode.react';
 import { Trash2, Search, Smartphone, User, Barcode, Layers, Printer } from 'lucide-react';
 
 interface CartItem {
@@ -77,8 +76,6 @@ export default function StandaloneBilling() {
   const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const calculatedDiscount = discountPercent > 0 ? (subtotal * discountPercent) / 100 : customDiscount;
   const grandTotal = Math.max(0, subtotal - calculatedDiscount);
-
-  const upiString = `upi://pay?pa=9975379151@pthdfc&pn=SHREE%20JI%20COLLECTION&am=${grandTotal.toFixed(2)}&cu=INR`;
 
   const handleCheckoutAndPrint = async () => {
     if (cart.length === 0) {
@@ -231,15 +228,7 @@ export default function StandaloneBilling() {
             </div>
           </div>
 
-          {/* HIDDEN QR CODE WRAPPER BLOCK */}
-          {cart.length > 0 && (
-            <div className="hidden my-3 flex-col items-center justify-center bg-white p-3 rounded-xl border">
-              <QRCodeSVG value={upiString} size={100} level="M" />
-              <span className="text-[10px] font-mono font-bold mt-1 text-slate-600">Scan QR Code: ₹{grandTotal.toFixed(2)}</span>
-            </div>
-          )}
-
-          <button onClick={handleCheckoutAndPrint} disabled={cart.length === 0 || isPrinting} className="w-full py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-sm rounded-xl transition shadow-sm flex items-center justify-center gap-2">
+          <button onClick={handleCheckoutAndPrint} disabled={cart.length === 0 || isPrinting} className="w-full py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-sm rounded-xl transition shadow-sm flex items-center justify-center gap-2 mt-4">
             <Printer className="w-4 h-4"/> {isPrinting ? "SAVING..." : "PRINT THERMAL BILL"}
           </button>
         </div>
