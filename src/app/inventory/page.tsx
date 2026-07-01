@@ -236,7 +236,7 @@ export default function InventoryManagement() {
               <span className="text-[10px] text-slate-400 block mt-1 font-medium">Hit <kbd className="font-sans font-bold bg-slate-100 px-1 rounded text-slate-600">Enter</kbd></span>
             </div>
 
-            {/* HIDDEN MEMORY MATRIX CAPTURE VALUE FOR INTEGRITY */}
+            {/* HIDDEN LOGICAL STATE BUFFER BOX */}
             <div className="hidden">
               <input type="text" value={color} onChange={e => setColor(e.target.value)}/>
             </div>
@@ -320,17 +320,18 @@ export default function InventoryManagement() {
 
                     {/* Active Controls Row Modifiers */}
                     <div className="col-span-1 flex items-center justify-end gap-1.5">
+                      {/* FIXED: MODIFIED COUNTER STEP TO INCREMENT BY +1 INSTEAD OF +10 */}
                       <button 
                         type="button"
-                        title="Increment Batch (+10 Units)"
-                        onClick={() => p.id && handleUpdateStock(p.id, Number(p.stock || 0), 10)}
+                        title="Increment Single Unit (+1)"
+                        onClick={() => p.id && handleUpdateStock(p.id, Number(p.stock || 0), 1)}
                         className="bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-600 hover:text-white w-7 h-6 rounded-lg flex items-center justify-center text-[10px] font-black shadow-sm transition-all duration-150 active:scale-95"
                       >
-                        +10
+                        +1
                       </button>
                       <button 
                         type="button"
-                        title="Decrement Single (-1 Unit)"
+                        title="Decrement Single Unit (-1)"
                         onClick={() => p.id && handleUpdateStock(p.id, Number(p.stock || 0), -1)}
                         disabled={(p.stock || 0) <= 0}
                         className="bg-amber-50 border border-amber-200 text-amber-700 hover:bg-amber-500 hover:text-white disabled:bg-slate-50 disabled:border-slate-100 disabled:text-slate-300 w-7 h-6 rounded-lg flex items-center justify-center text-[10px] font-black shadow-sm transition-all duration-150 active:scale-95"
