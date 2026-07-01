@@ -80,7 +80,7 @@ export default function StandaloneBilling() {
 
   const upiString = `upi://pay?pa=9975379151@pthdfc&pn=SHREE%20JI%20COLLECTION&am=${grandTotal.toFixed(2)}&cu=INR`;
 
-const handleCheckoutAndPrint = async () => {
+  const handleCheckoutAndPrint = async () => {
     if (cart.length === 0) {
       alert("Your cart is empty!");
       return;
@@ -90,7 +90,6 @@ const handleCheckoutAndPrint = async () => {
     setInvoiceCounter(prev => prev + 1);
 
     try {
-      // 1. Gather all calculated metrics for safety fallback mapping
       const currentSubtotal = subtotal || grandTotal || 0;
       const currentGrandTotal = grandTotal || 0;
       const currentCustomer = customerName || "Cash Customer";
@@ -102,7 +101,6 @@ const handleCheckoutAndPrint = async () => {
         total_amount: currentGrandTotal
       });
 
-      // 2. Safely commit data matching every known schema naming variation
       const { data: billData, error: billError } = await supabase
         .from('bills')
         .insert([{ 
@@ -119,11 +117,10 @@ const handleCheckoutAndPrint = async () => {
         throw billError;
       }
 
-      // 3. Assemble and map cart item details array matching your column schema properties
       const itemsToInsert = cart.map(item => ({
         bill_id: billData.id,
         product_id: item.id,
-        product_name: item.product_name || item.product_name || "Garment Item",
+        product_name: item.product_name || "Garment Item",
         quantity: parseInt(String(item.quantity)) || 1,
         price: parseFloat(String(item.price)) || 0
       }));
@@ -137,16 +134,14 @@ const handleCheckoutAndPrint = async () => {
         throw itemsError;
       }
 
-      // 4. Fire print layout after verified write sequence
       setTimeout(() => {
         window.print();
         
-        // Clear working transaction cache parameters
         setCart([]);
         setCustomerName('Cash Customer');
-        if (typeof setCustomerMobile === 'function') setCustomerMobile('');
-        if (typeof setDiscountPercent === 'function') setDiscountPercent(0);
-        if (typeof setCustomDiscount === 'function') setCustomDiscount(0);
+        setCustomerMobile('');
+        setDiscountPercent(0);
+        setCustomDiscount(0);
       }, 350);
 
     } catch (error: any) {
@@ -236,8 +231,9 @@ const handleCheckoutAndPrint = async () => {
             </div>
           </div>
 
+          {/* HIDDEN QR CODE WRAPPER BLOCK */}
           {cart.length > 0 && (
-            <div className="my-3 flex flex-col items-center justify-center bg-white p-3 rounded-xl border">
+            <div className="hidden my-3 flex-col items-center justify-center bg-white p-3 rounded-xl border">
               <QRCodeSVG value={upiString} size={100} level="M" />
               <span className="text-[10px] font-mono font-bold mt-1 text-slate-600">Scan QR Code: ₹{grandTotal.toFixed(2)}</span>
             </div>
@@ -249,7 +245,8 @@ const handleCheckoutAndPrint = async () => {
         </div>
       </div>
 
-      <div className="hidden print:block bg-white">
+      {/* 3-INCH THERMAL ROLL OPTIMIZED CONTAINER */}
+      <div className="hidden print:block bg-white max-w-[76mm] mx-auto text-xs">
         <ThermalReceipt invoiceNumber={invoiceCounter} date={new Date().toLocaleDateString('en-IN')} customerName={customerName} customerMobile={customerMobile} items={cart} subtotal={subtotal} discountValue={calculatedDiscount} grandTotal={grandTotal} />
       </div>
     </div>
