@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from './lib/supabase';
 import { ShoppingBag, Tags, History, AlertCircle, TrendingUp } from 'lucide-react';
 
+export const dynamic = "force-dynamic"
 export const revalidate = 0; // forces dashboard to fetch brand new data on every single page load 
 
 export default function Dashboard() {
