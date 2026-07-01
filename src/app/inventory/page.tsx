@@ -22,7 +22,6 @@ export default function InventoryManagement() {
   
   // Form State
   const [name, setName] = useState('');
-  const [code, setCode] = useState('');
   const [barcode, setBarcode] = useState('');
   const [category, setCategory] = useState('Mens Wear');
   const [size, setSize] = useState('M');
@@ -57,7 +56,8 @@ export default function InventoryManagement() {
 
     const newProduct: Product = {
       product_name: name,
-      product_code: code || barcode,
+      // AUTOMATION: Seamlessly sets product_code to the barcode string in the background
+      product_code: barcode,
       barcode: barcode,
       category: category,
       size: size,
@@ -68,13 +68,12 @@ export default function InventoryManagement() {
 
     const { error } = await supabase.from('products').insert([newProduct]);
 
-    setIsLoading(false);
+    setIsLoading(true);
 
     if (error) {
       alert("Error saving item: " + error.message);
     } else {
       setName('');
-      setCode('');
       setBarcode('');
       setColor('');
       setPrice('');
@@ -82,6 +81,7 @@ export default function InventoryManagement() {
       fetchProducts();
       alert("Product safely uploaded to Shree Ji Cloud Inventory!");
     }
+    setIsLoading(false);
   };
 
   // Direct Quantities Delta Mutator
@@ -150,15 +150,10 @@ export default function InventoryManagement() {
               <input type="text" placeholder="e.g., Raymond Cotton Formal Shirt" value={name} onChange={e => setName(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-slate-50 text-sm font-medium text-black focus:outline-none focus:bg-white"/>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1"><Barcode className="w-3 h-3"/> Barcode *</label>
-                <input type="text" placeholder="Scan tag..." value={barcode} onChange={e => setBarcode(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-slate-50 text-xs font-bold text-black focus:outline-none focus:bg-white"/>
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Product Code</label>
-                <input type="text" placeholder="e.g., SH-01" value={code} onChange={e => setCode(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-slate-50 text-xs font-medium text-black focus:outline-none focus:bg-white"/>
-              </div>
+            {/* Streamlined Barcode Field - The Product Code box is gone and handles itself */}
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1"><Barcode className="w-3 h-3"/> Barcode *</label>
+              <input type="text" placeholder="Scan tag..." value={barcode} onChange={e => setBarcode(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-slate-50 text-xs font-bold text-black focus:outline-none focus:bg-white"/>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -209,7 +204,7 @@ export default function InventoryManagement() {
           </form>
         </div>
 
-        {/* Right Data Grid with High Contrast Structural Layout Row Matrix */}
+        {/* Right Data Grid */}
         <div className="lg:col-span-2 bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between overflow-hidden">
           <div className="space-y-4">
             <div className="relative">
