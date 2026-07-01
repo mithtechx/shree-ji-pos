@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import { Plus, Tags, Search, RefreshCw, Barcode, Trash2 } from 'lucide-react';
 
@@ -25,10 +25,16 @@ export default function InventoryManagement() {
   const [barcode, setBarcode] = useState('');
   const [category, setCategory] = useState('Mens Wear');
   const [size, setSize] = useState('M');
-  const [color, setColor] = useState('');
+  const [color, setColor] = useState(''); // Hidden but safely maintained in internal memory state
   const [price, setPrice] = useState('');
   const [stock, setStock] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  // Focus Element references for keyboard jump sequence mapping
+  const nameRef = useRef<HTMLInputElement>(null);
+  const barcodeRef = useRef<HTMLInputElement>(null);
+  const priceRef = useRef<HTMLInputElement>(null);
+  const stockRef = useRef<HTMLInputElement>(null);
 
   // Fetch products from Supabase
   const fetchProducts = async () => {
@@ -44,6 +50,17 @@ export default function InventoryManagement() {
     fetchProducts();
   }, []);
 
+  // Keyboard Navigation shortcut intercept routing
+  const handleKeyDown = (e: React.KeyboardEvent, nextFieldRef: React.RefObject<HTMLInputElement | null>) => {
+    if (e.key === 'Shift') {
+      e.preventDefault(); // Prevents default browser sequence behavior flags
+      if (nextFieldRef && nextFieldRef.current) {
+        nextFieldRef.current.focus();
+        nextFieldRef.current.select(); // Highlight existing input content for quicker overriding
+      }
+    }
+  };
+
   // Handle Form Submission to save item to Cloud
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,19 +73,16 @@ export default function InventoryManagement() {
 
     const newProduct: Product = {
       product_name: name,
-      // AUTOMATION: Seamlessly sets product_code to the barcode string in the background
-      product_code: barcode,
+      product_code: barcode, // Back-end Automation: sets system code automatically to barcode value
       barcode: barcode,
       category: category,
       size: size,
-      color: color || 'Standard',
+      color: color || 'Standard', // Falls back safely without needing a user input wrapper block
       price: Number(price),
       stock: Number(stock)
     };
 
     const { error } = await supabase.from('products').insert([newProduct]);
-
-    setIsLoading(true);
 
     if (error) {
       alert("Error saving item: " + error.message);
@@ -79,7 +93,8 @@ export default function InventoryManagement() {
       setPrice('');
       setStock('');
       fetchProducts();
-      alert("Product safely uploaded to Shree Ji Cloud Inventory!");
+      // Instantly resets cursor view sequence back to Item Name box for immediate next data entry loop
+      if (nameRef.current) nameRef.current.focus();
     }
     setIsLoading(false);
   };
@@ -95,8 +110,6 @@ export default function InventoryManagement() {
         .eq('id', productId);
 
       if (error) throw error;
-      
-      // Instantly updates UI array state locally
       setProducts(prev => prev.map(p => p.id === productId ? { ...p, stock: newStockLevel } : p));
     } catch (error: any) {
       alert("Could not update product stock level: " + error.message);
@@ -147,13 +160,15 @@ export default function InventoryManagement() {
           <form onSubmit={handleAddProduct} className="space-y-3.5">
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Item Name *</label>
-              <input type="text" placeholder="e.g., Raymond Cotton Formal Shirt" value={name} onChange={e => setName(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-slate-50 text-sm font-medium text-black focus:outline-none focus:bg-white"/>
+              <input ref={nameRef} type="text" placeholder="e.g., Raymond Cotton Formal Shirt" value={name} onChange={e => setName(e.target.value)} onKeyDown={e => handleKeyDown(e, barcodeRef)} className="w-full px-3 py-2 border rounded-xl bg-slate-50 text-sm font-medium text-black focus:outline-none focus:bg-white" autoFocus/>
+              <span className="text-[10px] text-slate-400 block mt-0.5 font-semibold">💡 Press Shift key to jump to Barcode</span>
             </div>
 
-            {/* Streamlined Barcode Field - The Product Code box is gone and handles itself */}
+            {/* Streamlined Barcode Field */}
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1"><Barcode className="w-3 h-3"/> Barcode *</label>
-              <input type="text" placeholder="Scan tag..." value={barcode} onChange={e => setBarcode(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-slate-50 text-xs font-bold text-black focus:outline-none focus:bg-white"/>
+              <input ref={barcodeRef} type="text" placeholder="Scan tag..." value={barcode} onChange={e => setBarcode(e.target.value)} onKeyDown={e => handleKeyDown(e, priceRef)} className="w-full px-3 py-2 border rounded-xl bg-slate-50 text-xs font-bold text-black focus:outline-none focus:bg-white"/>
+              <span className="text-[10px] text-slate-400 block mt-0.5 font-semibold">💡 Press Shift key to jump to Price</span>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -183,18 +198,21 @@ export default function InventoryManagement() {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
-              <div className="col-span-1">
-                <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Color</label>
-                <input type="text" placeholder="Blue" value={color} onChange={e => setColor(e.target.value)} className="w-full px-2 py-2 border rounded-xl bg-slate-50 text-xs font-medium text-black focus:outline-none focus:bg-white"/>
+            <div className="grid grid-cols-2 gap-3">
+              {/* HIDDEN COLOR PARAMETER SECTION GRID BLOCK */}
+              <div className="hidden">
+                <input type="text" value={color} onChange={e => setColor(e.target.value)}/>
               </div>
+              
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Price *</label>
-                <input type="number" placeholder="₹ Rate" value={price} onChange={e => setPrice(e.target.value)} className="w-full px-2 py-2 border rounded-xl bg-slate-50 text-xs font-bold text-black focus:outline-none focus:bg-white"/>
+                <input ref={priceRef} type="number" placeholder="₹ Rate" value={price} onChange={e => setPrice(e.target.value)} onKeyDown={e => handleKeyDown(e, stockRef)} className="w-full px-3 py-2 border rounded-xl bg-slate-50 text-xs font-bold text-black focus:outline-none focus:bg-white"/>
+                <span className="text-[10px] text-slate-400 block mt-0.5 font-semibold">💡 Press Shift to jump to Stock</span>
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Stock Qty *</label>
-                <input type="number" placeholder="Pcs" value={stock} onChange={e => setStock(e.target.value)} className="w-full px-2 py-2 border rounded-xl bg-slate-50 text-xs font-bold text-black focus:outline-none focus:bg-white"/>
+                <input ref={stockRef} type="number" placeholder="Pcs" value={stock} onChange={e => setStock(e.target.value)} className="w-full px-3 py-2 border rounded-xl bg-slate-50 text-xs font-bold text-black focus:outline-none focus:bg-white"/>
+                <span className="text-[10px] text-slate-400 block mt-0.5 font-semibold">💡 Press Enter to save item</span>
               </div>
             </div>
 
@@ -213,16 +231,14 @@ export default function InventoryManagement() {
             </div>
 
             <div className="border rounded-xl overflow-hidden max-h-[480px] overflow-y-auto">
-              {/* Header Label Bar */}
               <div className="bg-slate-50 border-b p-3 text-[10px] font-bold uppercase text-slate-500 grid grid-cols-12 gap-2 sticky top-0 z-10">
                 <div className="col-span-4">Product Profile</div>
-                <div className="col-span-2 text-center">Size/Color</div>
+                <div className="col-span-2 text-center">Size</div>
                 <div className="col-span-2 text-right">Price</div>
                 <div className="col-span-2 text-center">Stock</div>
                 <div className="col-span-2 text-center">Actions</div>
               </div>
 
-              {/* Data Items List */}
               <div className="divide-y divide-slate-100 bg-white text-xs text-black font-medium">
                 {filteredProducts.length === 0 ? (
                   <div className="py-8 text-center text-slate-400 font-normal">No registered products matched this search phrase.</div>
@@ -233,7 +249,7 @@ export default function InventoryManagement() {
                         <p className="font-bold text-slate-800 truncate">{p.product_name}</p>
                         <p className="text-[10px] text-slate-400 font-mono">Barcode: {p.barcode}</p>
                       </div>
-                      <div className="col-span-2 text-center text-slate-600 truncate">{p.size} / {p.color}</div>
+                      <div className="col-span-2 text-center text-slate-600 truncate">{p.size}</div>
                       <div className="col-span-2 text-right font-bold text-slate-900">₹{Number(p.price).toFixed(2)}</div>
                       <div className="col-span-2 text-center">
                         <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold inline-block ${p.stock > 10 ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'}`}>
@@ -268,7 +284,6 @@ export default function InventoryManagement() {
                   ))
                 )}
               </div>
-
             </div>
           </div>
         </div>
