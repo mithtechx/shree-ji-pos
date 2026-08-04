@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import ThermalReceipt from '../components/ThermalReceipt';
-import { Trash2, Search, Smartphone, User, Barcode, Layers, Printer } from 'lucide-react';
+import { Trash2, Search, Smartphone, User, UserCheck, Barcode, Layers, Printer } from 'lucide-react';
 
 interface CartItem {
   id: string;
@@ -18,6 +18,7 @@ export default function StandaloneBilling() {
   const [barcodeInput, setBarcodeInput] = useState('');
   const [customerName, setCustomerName] = useState('Cash Customer');
   const [customerMobile, setCustomerMobile] = useState('');
+  const [salesmanName, setSalesmanName] = useState('Rahul');
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [customDiscount, setCustomDiscount] = useState<number>(0);
   const [isPrinting, setIsPrinting] = useState(false);
@@ -137,6 +138,7 @@ export default function StandaloneBilling() {
         setCart([]);
         setCustomerName('Cash Customer');
         setCustomerMobile('');
+        setSalesmanName('Rahul');
         setDiscountPercent(0);
         setCustomDiscount(0);
       }, 350);
@@ -158,7 +160,7 @@ export default function StandaloneBilling() {
             <Layers className="text-violet-600 w-5 h-5"/> POS Active Counter
           </h2>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1"><User className="w-3 h-3 inline mr-1"/> Customer Name</label>
               <input type="text" value={customerName} onChange={e => setCustomerName(e.target.value)} className="w-full px-3 py-2 border rounded-lg bg-slate-50 font-medium text-sm text-black"/>
@@ -166,6 +168,20 @@ export default function StandaloneBilling() {
             <div>
               <label className="block text-xs font-bold text-slate-500 uppercase mb-1"><Smartphone className="w-3 h-3 inline mr-1"/> Mobile Number</label>
               <input type="text" placeholder="Optional..." value={customerMobile} onChange={e => setCustomerMobile(e.target.value)} className="w-full px-3 py-2 border rounded-lg bg-slate-50 font-medium text-sm text-black"/>
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1"><UserCheck className="w-3 h-3 inline mr-1"/> Salesman Name</label>
+              <select 
+                value={salesmanName} 
+                onChange={e => setSalesmanName(e.target.value)} 
+                className="w-full px-3 py-2 border rounded-lg bg-slate-50 font-medium text-sm text-black focus:outline-none focus:ring-2 focus:ring-violet-600"
+              >
+                <option value="Rahul">Rahul</option>
+                <option value="Ashish">Ashish</option>
+                <option value="Aksh">Aksh</option>
+                <option value="Sale 4">Sale 4</option>
+                <option value="Sale 5">Sale 5</option>
+              </select>
             </div>
           </div>
 
@@ -236,7 +252,17 @@ export default function StandaloneBilling() {
 
       {/* 3-INCH THERMAL ROLL OPTIMIZED CONTAINER */}
       <div className="hidden print:block bg-white max-w-[76mm] mx-auto text-xs">
-        <ThermalReceipt invoiceNumber={invoiceCounter} date={new Date().toLocaleDateString('en-IN')} customerName={customerName} customerMobile={customerMobile} items={cart} subtotal={subtotal} discountValue={calculatedDiscount} grandTotal={grandTotal} />
+        <ThermalReceipt 
+          invoiceNumber={invoiceCounter} 
+          date={new Date().toLocaleDateString('en-IN')} 
+          customerName={customerName} 
+          customerMobile={customerMobile} 
+          salesmanName={salesmanName}
+          items={cart} 
+          subtotal={subtotal} 
+          discountValue={calculatedDiscount} 
+          grandTotal={grandTotal} 
+        />
       </div>
     </div>
   );
