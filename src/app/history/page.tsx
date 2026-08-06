@@ -108,7 +108,7 @@ export default function BillHistoryLog() {
                   <td className="p-3 font-semibold text-slate-700">
                     <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-md text-[11px]">
                       <UserCheck className="w-3 h-3 text-violet-600"/>
-                      {b.salesman_name || 'Rahul'}
+                      {b.salesman_name || 'N/A'}
                     </span>
                   </td>
                   <td className="p-3 text-slate-500">{new Date(b.created_at).toLocaleDateString('en-IN')}</td>
@@ -142,7 +142,7 @@ export default function BillHistoryLog() {
                 date={new Date(selectedBill.created_at).toLocaleDateString('en-IN')}
                 customerName={selectedBill.customer_name}
                 customerMobile={selectedBill.customer_mobile}
-                salesmanName={selectedBill.salesman_name || 'Rahul'}
+                salesmanName={selectedBill.salesman_name || 'N/A'}
                 items={billItems.length > 0 ? billItems : [{product_name: "Loading items...", quantity: 1, price: selectedBill.grand_total}]}
                 subtotal={selectedBill.subtotal}
                 discountValue={selectedBill.discount_value}
