@@ -3,13 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import ThermalReceipt from '../components/ThermalReceipt';
-import { History, Search, Printer, Eye, X } from 'lucide-react';
+import { History, Search, Printer, Eye, X, UserCheck } from 'lucide-react';
 
 interface BillRecord {
   id: string;
   invoice_number: number;
   customer_name: string;
   customer_mobile: string;
+  salesman_name?: string;
   subtotal: number;
   discount_value: number;
   grand_total: number;
@@ -53,7 +54,8 @@ export default function BillHistoryLog() {
   const filteredBills = bills.filter(b => 
     b.invoice_number.toString().includes(searchQuery) ||
     b.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (b.customer_mobile && b.customer_mobile.includes(searchQuery))
+    (b.customer_mobile && b.customer_mobile.includes(searchQuery)) ||
+    (b.salesman_name && b.salesman_name.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -68,7 +70,7 @@ export default function BillHistoryLog() {
       <div className="relative max-w-md print:hidden">
         <input 
           type="text" 
-          placeholder="Search by Invoice #, Name, or Mobile Number..." 
+          placeholder="Search by Invoice #, Name, Mobile, or Salesman..." 
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           className="w-full pl-9 pr-4 py-2 border rounded-xl bg-white text-xs font-medium text-black focus:outline-none"
@@ -83,6 +85,7 @@ export default function BillHistoryLog() {
             <tr>
               <th className="p-3">Invoice ID</th>
               <th className="p-3">Customer Info</th>
+              <th className="p-3">Salesman</th>
               <th className="p-3">Date</th>
               <th className="p-3 text-right">Total Discount</th>
               <th className="p-3 text-right">Paid Amount</th>
@@ -92,7 +95,7 @@ export default function BillHistoryLog() {
           <tbody className="text-xs font-medium text-black divide-y bg-white">
             {filteredBills.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-slate-400 font-normal">No past billing history matches your query parameters.</td>
+                <td colSpan={7} className="py-8 text-center text-slate-400 font-normal">No past billing history matches your query parameters.</td>
               </tr>
             ) : (
               filteredBills.map(b => (
@@ -102,8 +105,14 @@ export default function BillHistoryLog() {
                     <p className="font-bold text-slate-800">{b.customer_name}</p>
                     <p className="text-[10px] text-slate-400">{b.customer_mobile || 'No Mobile'}</p>
                   </td>
+                  <td className="p-3 font-semibold text-slate-700">
+                    <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-md text-[11px]">
+                      <UserCheck className="w-3 h-3 text-violet-600"/>
+                      {b.salesman_name || 'Rahul'}
+                    </span>
+                  </td>
                   <td className="p-3 text-slate-500">{new Date(b.created_at).toLocaleDateString('en-IN')}</td>
-                  <td className="p-3 text-right text-red-500">₹{Number(b.discount_value).toFixed(2)}</td>
+                  <td className="p-3 text-right text-red-500">₹{Number(b.discount_value || 0).toFixed(2)}</td>
                   <td className="p-3 text-right font-black text-slate-900">₹{Number(b.grand_total).toFixed(2)}</td>
                   <td className="p-3 text-center space-x-2">
                     <button onClick={() => handleViewBillDetails(b)} className="p-1.5 bg-slate-100 hover:bg-violet-100 hover:text-violet-700 rounded-lg text-slate-600 transition inline-flex items-center"><Eye className="w-3.5 h-3.5"/></button>
@@ -133,6 +142,7 @@ export default function BillHistoryLog() {
                 date={new Date(selectedBill.created_at).toLocaleDateString('en-IN')}
                 customerName={selectedBill.customer_name}
                 customerMobile={selectedBill.customer_mobile}
+                salesmanName={selectedBill.salesman_name || 'Rahul'}
                 items={billItems.length > 0 ? billItems : [{product_name: "Loading items...", quantity: 1, price: selectedBill.grand_total}]}
                 subtotal={selectedBill.subtotal}
                 discountValue={selectedBill.discount_value}
