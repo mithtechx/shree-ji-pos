@@ -14,6 +14,7 @@ interface ThermalReceiptProps {
   date: string;
   customerName?: string;
   customerMobile?: string;
+  salesmanName?: string;
   items: ReceiptItem[];
   subtotal: number;
   discountValue: number;
@@ -25,6 +26,7 @@ export default function ThermalReceipt({
   date,
   customerName = "Cash Customer",
   customerMobile = "",
+  salesmanName = "Rahul",
   items,
   subtotal,
   discountValue,
@@ -48,6 +50,7 @@ export default function ThermalReceipt({
         <div><strong>Date:</strong> {date}</div>
         <div><strong>Customer:</strong> {customerName}</div>
         {customerMobile && <div><strong>Mobile:</strong> {customerMobile}</div>}
+        <div><strong>Salesman:</strong> {salesmanName}</div>
       </div>
 
       <p className="text-xs text-center">----------------------------------------</p>
