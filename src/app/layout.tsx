@@ -115,8 +115,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div>
               <div className="py-4 border-b border-slate-800 mb-6 px-2">
                 <h2 className="text-lg font-black text-white tracking-wider uppercase">SHREE JI COLLECTION</h2>
-                <p className="text-[10px] text-slate-500 font-bold tracking-tight mt-0.5">Billing Software v1.0
-                made by MithTechX</p>
+                <p className="text-[10px] text-slate-500 font-bold tracking-tight mt-0.5">Billing Software v1.0</p>
+                <p className="text-[10px] text-slate-500 font-bold tracking-tight mt-0.5">Made by MithTechX</p>
               </div>
 
               <nav className="space-y-1.5">
