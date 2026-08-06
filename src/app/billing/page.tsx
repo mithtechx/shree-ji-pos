@@ -92,18 +92,22 @@ export default function StandaloneBilling() {
       const currentGrandTotal = grandTotal || 0;
       const currentCustomer = customerName || "Cash Customer";
 
-      console.log("Attempting database upload payload:", {
+      console.log("Attempting database upload payload with salesman:", {
         customer_name: currentCustomer,
+        salesman_name: salesmanName,
         subtotal: currentSubtotal,
         grand_total: currentGrandTotal,
         total_amount: currentGrandTotal
       });
 
+      // EXACT FIX: Added salesman_name to the database payload
       const { data: billData, error: billError } = await supabase
         .from('bills')
         .insert([{ 
-          customer_name: currentCustomer, 
+          customer_name: currentCustomer,
+          salesman_name: salesmanName,
           subtotal: currentSubtotal,
+          discount_value: calculatedDiscount,
           grand_total: currentGrandTotal,
           total_amount: currentGrandTotal
         }])
@@ -176,11 +180,11 @@ export default function StandaloneBilling() {
                 onChange={e => setSalesmanName(e.target.value)} 
                 className="w-full px-3 py-2 border rounded-lg bg-slate-50 font-medium text-sm text-black focus:outline-none focus:ring-2 focus:ring-violet-600"
               >
-                <option value="Rahul">RD</option>
-                <option value="Ashish">AJ</option>
-                <option value="Aksh">AK</option>
-                <option value="Sale 4">Salesman 4</option>
-                <option value="Sale 5">Salesman 5</option>
+                <option value="Rahul">Rahul</option>
+                <option value="Ashish">Ashish</option>
+                <option value="Aksh">Aksh</option>
+                <option value="Sale 4">Sale 4</option>
+                <option value="Sale 5">Sale 5</option>
               </select>
             </div>
           </div>
