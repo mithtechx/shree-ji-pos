@@ -92,19 +92,21 @@ export default function StandaloneBilling() {
       const currentGrandTotal = grandTotal || 0;
       const currentCustomer = customerName || "Cash Customer";
 
-      console.log("Attempting database upload payload with salesman:", {
+      console.log("Attempting database upload payload with salesman and customer mobile:", {
         customer_name: currentCustomer,
+        customer_mobile: customerMobile,
         salesman_name: salesmanName,
         subtotal: currentSubtotal,
         grand_total: currentGrandTotal,
         total_amount: currentGrandTotal
       });
 
-      // EXACT FIX: Added salesman_name to the database payload
+      // EXACT FIX: Added customer_mobile alongside salesman_name to database payload
       const { data: billData, error: billError } = await supabase
         .from('bills')
         .insert([{ 
           customer_name: currentCustomer,
+          customer_mobile: customerMobile || null,
           salesman_name: salesmanName,
           subtotal: currentSubtotal,
           discount_value: calculatedDiscount,
