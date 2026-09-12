@@ -101,7 +101,6 @@ export default function StandaloneBilling() {
         total_amount: currentGrandTotal
       });
 
-      // EXACT FIX: Added customer_mobile alongside salesman_name to database payload
       const { data: billData, error: billError } = await supabase
         .from('bills')
         .insert([{ 
@@ -185,7 +184,7 @@ export default function StandaloneBilling() {
                 <option value="Rahul">Rahul</option>
                 <option value="Ashish">Ashish</option>
                 <option value="Aksh">Aksh</option>
-                <option value="Sale 4">Sale 4</option>
+                <option value="Rupali Tai">Rupali Tai</option>
                 <option value="Sale 5">Sale 5</option>
               </select>
             </div>
