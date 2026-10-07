@@ -17,6 +17,8 @@ interface BillRecord {
   created_at: string;
 }
 
+const SALESMEN_LIST = ["Rahul", "Ashish", "Aksh", "Rupali Tai", "Sale 5"];
+
 export default function BillHistoryLog() {
   const [bills, setBills] = useState<BillRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,9 +38,30 @@ export default function BillHistoryLog() {
     fetchBillHistory();
   }, []);
 
+  // Update Salesman directly in database & state
+  const handleSalesmanChange = async (billId: string, newSalesman: string) => {
+    try {
+      const { error } = await supabase
+        .from('bills')
+        .update({ salesman_name: newSalesman })
+        .eq('id', billId);
+
+      if (error) throw error;
+
+      setBills(prev =>
+        prev.map(b => (b.id === billId ? { ...b, salesman_name: newSalesman } : b))
+      );
+      
+      if (selectedBill && selectedBill.id === billId) {
+        setSelectedBill(prev => prev ? { ...prev, salesman_name: newSalesman } : null);
+      }
+    } catch (err: any) {
+      alert("Failed to update salesman: " + err.message);
+    }
+  };
+
   const handleViewBillDetails = async (bill: BillRecord) => {
     setSelectedBill(bill);
-    // Fetch snapshot item records matching the target bill key link
     const { data } = await supabase
       .from('bill_items')
       .select('*')
@@ -105,12 +128,25 @@ export default function BillHistoryLog() {
                     <p className="font-bold text-slate-800">{b.customer_name}</p>
                     <p className="text-[10px] text-slate-400">{b.customer_mobile || 'No Mobile'}</p>
                   </td>
-                  <td className="p-3 font-semibold text-slate-700">
-                    <span className="inline-flex items-center gap-1 bg-slate-100 px-2 py-0.5 rounded-md text-[11px]">
-                      <UserCheck className="w-3 h-3 text-violet-600"/>
-                      {b.salesman_name || 'N/A'}
-                    </span>
+
+                  {/* EDITABLE SALESMAN DROPDOWN */}
+                  <td className="p-3">
+                    <div className="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 border border-slate-300 px-2 py-1 rounded-lg transition">
+                      <UserCheck className="w-3.5 h-3.5 text-violet-600 shrink-0"/>
+                      <select
+                        value={b.salesman_name || 'Rahul'}
+                        onChange={(e) => handleSalesmanChange(b.id, e.target.value)}
+                        className="bg-transparent text-slate-800 text-[11px] font-bold focus:outline-none cursor-pointer pr-1"
+                      >
+                        {SALESMEN_LIST.map((name) => (
+                          <option key={name} value={name}>
+                            {name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </td>
+
                   <td className="p-3 text-slate-500">{new Date(b.created_at).toLocaleDateString('en-IN')}</td>
                   <td className="p-3 text-right text-red-500">₹{Number(b.discount_value || 0).toFixed(2)}</td>
                   <td className="p-3 text-right font-black text-slate-900">₹{Number(b.grand_total).toFixed(2)}</td>
