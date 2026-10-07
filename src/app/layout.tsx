@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, ShoppingBag, History, LogOut, Tags, Lock, User } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, History, LogOut, Tags, Lock, User, TrendingUp } from 'lucide-react';
 import './globals.css';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -40,11 +40,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     router.push('/');
   };
 
+  // Updated navigation list containing Sales Track below Bill History
   const menuItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
     { name: 'Products', path: '/inventory', icon: Tags },
     { name: 'Billing', path: '/billing', icon: ShoppingBag },
     { name: 'Bill History', path: '/history', icon: History },
+    { name: 'Sales Track', path: '/sales-track', icon: TrendingUp },
   ];
 
   // 1. Terminals are LOCKED until authorized
