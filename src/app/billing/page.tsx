@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import ThermalReceipt from '../components/ThermalReceipt';
-import { Trash2, Search, Smartphone, User, UserCheck, Barcode, Layers, Printer } from 'lucide-react';
+import { Trash2, Search, Smartphone, User, UserCheck, Barcode, Layers, Printer, Wallet, CreditCard } from 'lucide-react';
 
 interface CartItem {
   id: string;
@@ -23,6 +23,7 @@ export default function StandaloneBilling() {
   const [salesmanName, setSalesmanName] = useState('');
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [customDiscount, setCustomDiscount] = useState<number>(0);
+  const [paymentMode, setPaymentMode] = useState<'Cash' | 'Online'>('Cash');
   const [isPrinting, setIsPrinting] = useState(false);
   const [invoiceCounter, setInvoiceCounter] = useState(2001);
 
@@ -66,8 +67,8 @@ export default function StandaloneBilling() {
       }
       return [...prevCart, {
         id: product.id,
-        product_name: product.product_name,
-        price: Number(product.price),
+        product_name: product.product_name || product.name,
+        price: Number(product.price || product.selling_price || 0),
         quantity: 1,
         barcode: product.barcode
       }];
@@ -94,13 +95,13 @@ export default function StandaloneBilling() {
       const currentGrandTotal = grandTotal || 0;
       const currentCustomer = customerName || "Cash Customer";
 
-      console.log("Attempting database upload payload with salesman and customer mobile:", {
+      console.log("Attempting database upload payload with payment mode:", {
         customer_name: currentCustomer,
         customer_mobile: customerMobile,
         salesman_name: salesmanName,
         subtotal: currentSubtotal,
         grand_total: currentGrandTotal,
-        total_amount: currentGrandTotal
+        payment_mode: paymentMode,
       });
 
       const { data: billData, error: billError } = await supabase
@@ -112,7 +113,8 @@ export default function StandaloneBilling() {
           subtotal: currentSubtotal,
           discount_value: calculatedDiscount,
           grand_total: currentGrandTotal,
-          total_amount: currentGrandTotal
+          total_amount: currentGrandTotal,
+          payment_mode: paymentMode
         }])
         .select()
         .single();
@@ -148,6 +150,7 @@ export default function StandaloneBilling() {
         setSalesmanName('');
         setDiscountPercent(0);
         setCustomDiscount(0);
+        setPaymentMode('Cash');
       }, 350);
 
     } catch (error: any) {
@@ -250,6 +253,35 @@ export default function StandaloneBilling() {
               <div className="flex justify-between text-red-500"><span>Discount:</span><span>-₹{calculatedDiscount.toFixed(2)}</span></div>
               <div className="flex justify-between text-lg font-black text-slate-900 border-t border-dashed pt-2 mt-2"><span>Grand Total:</span><span className="text-violet-700">₹{grandTotal.toFixed(2)}</span></div>
             </div>
+
+            {/* PAYMENT MODE SELECTOR (CASH / ONLINE) */}
+            <div className="space-y-2 border-t pt-4 mt-4">
+              <label className="block text-xs font-bold text-slate-500 uppercase">Payment Mode</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPaymentMode('Cash')}
+                  className={`py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 border transition ${
+                    paymentMode === 'Cash'
+                      ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <Wallet className="w-4 h-4" /> CASH
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPaymentMode('Online')}
+                  className={`py-2.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1.5 border transition ${
+                    paymentMode === 'Online'
+                      ? 'bg-violet-600 text-white border-violet-600 shadow-sm'
+                      : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <CreditCard className="w-4 h-4" /> ONLINE / UPI
+                </button>
+              </div>
+            </div>
           </div>
 
           <button onClick={handleCheckoutAndPrint} disabled={cart.length === 0 || isPrinting} className="w-full py-3 bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold text-sm rounded-xl transition shadow-sm flex items-center justify-center gap-2 mt-4">
@@ -266,6 +298,7 @@ export default function StandaloneBilling() {
           customerName={customerName} 
           customerMobile={customerMobile} 
           salesmanName={salesmanName}
+          paymentMode={paymentMode}
           items={cart} 
           subtotal={subtotal} 
           discountValue={calculatedDiscount} 
