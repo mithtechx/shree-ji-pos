@@ -102,6 +102,7 @@ export default function ExpenseManagerPage() {
             className="w-full px-3 py-2 border rounded-lg bg-white text-sm font-semibold text-black"
           >
             <option value="Tea / Snacks">Tea / Snacks</option>
+            <option value="Stock Purchases">Stock Purchases</option>
             <option value="Rent">Rent</option>
             <option value="Electricity">Electricity</option>
             <option value="Salary / Advance">Salary / Advance</option>
@@ -168,16 +169,4 @@ export default function ExpenseManagerPage() {
                   <td className="p-3 text-slate-600">{item.description || item.title || '-'}</td>
                   <td className="p-3 text-right font-black text-slate-800">₹{item.amount.toFixed(2)}</td>
                   <td className="p-3 text-center">
-                    <button onClick={() => handleDeleteExpense(item.id)} className="text-red-500 hover:text-red-700">
-                      <Trash2 className="w-4 h-4 inline" />
-                    </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
+                    <button onClick={() => handleDeleteExpense(item.id)} className="text-red-500
