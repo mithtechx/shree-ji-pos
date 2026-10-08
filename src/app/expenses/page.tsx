@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Receipt, Plus, Trash2, IndianRupee } from 'lucide-react';
+import { Receipt, Plus, Trash2, IndianRupee, Repeat } from 'lucide-react';
 
 interface ExpenseItem {
   id: string;
@@ -10,6 +10,7 @@ interface ExpenseItem {
   category: string;
   amount: number;
   description?: string;
+  is_recurring?: boolean;
   created_at: string;
 }
 
@@ -18,6 +19,7 @@ export default function ExpenseManagerPage() {
   const [category, setCategory] = useState('Tea / Snacks');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
+  const [isRecurring, setIsRecurring] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -49,13 +51,15 @@ export default function ExpenseManagerPage() {
           title: expenseTitle,
           category,
           amount: parseFloat(amount),
-          description: description.trim()
+          description: description.trim(),
+          is_recurring: isRecurring
         }]);
 
       if (error) throw error;
 
       setAmount('');
       setDescription('');
+      setIsRecurring(false);
       fetchExpenses();
     } catch (err: any) {
       console.error(err);
@@ -93,7 +97,7 @@ export default function ExpenseManagerPage() {
         </div>
       </div>
 
-      <form onSubmit={handleAddExpense} className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border">
+      <form onSubmit={handleAddExpense} className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-slate-50 p-4 rounded-xl border">
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Category</label>
           <select
@@ -134,6 +138,18 @@ export default function ExpenseManagerPage() {
           />
         </div>
 
+        <div className="flex items-center gap-2 pt-5">
+          <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
+            <input
+              type="checkbox"
+              checked={isRecurring}
+              onChange={(e) => setIsRecurring(e.target.checked)}
+              className="w-4 h-4 text-violet-600 rounded border-slate-300 focus:ring-violet-500"
+            />
+            <Repeat className="w-3.5 h-3.5 text-violet-600" /> Recurring
+          </label>
+        </div>
+
         <div className="flex items-end">
           <button
             type="submit"
@@ -152,6 +168,7 @@ export default function ExpenseManagerPage() {
               <th className="p-3">Date</th>
               <th className="p-3">Category</th>
               <th className="p-3">Description</th>
+              <th className="p-3 text-center">Type</th>
               <th className="p-3 text-right">Amount</th>
               <th className="p-3 text-center">Action</th>
             </tr>
@@ -159,7 +176,7 @@ export default function ExpenseManagerPage() {
           <tbody className="text-sm divide-y text-black font-medium">
             {expenses.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-slate-400 font-normal">No recorded expenses yet.</td>
+                <td colSpan={6} className="py-8 text-center text-slate-400 font-normal">No recorded expenses yet.</td>
               </tr>
             ) : (
               expenses.map(item => (
@@ -167,6 +184,15 @@ export default function ExpenseManagerPage() {
                   <td className="p-3 text-xs text-slate-500">{new Date(item.created_at).toLocaleDateString('en-IN')}</td>
                   <td className="p-3 font-bold">{item.category}</td>
                   <td className="p-3 text-slate-600">{item.description || item.title || '-'}</td>
+                  <td className="p-3 text-center">
+                    {item.is_recurring ? (
+                      <span className="bg-violet-100 text-violet-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                        <Repeat className="w-2.5 h-2.5" /> Recurring
+                      </span>
+                    ) : (
+                      <span className="text-slate-400 text-xs">-</span>
+                    )}
+                  </td>
                   <td className="p-3 text-right font-black text-slate-800">₹{item.amount.toFixed(2)}</td>
                   <td className="p-3 text-center">
                     <button onClick={() => handleDeleteExpense(item.id)} className="text-red-500 hover:text-red-700">
