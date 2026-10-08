@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Receipt, Plus, Trash2, IndianRupee, Repeat } from 'lucide-react';
+import { Receipt, Plus, Trash2, IndianRupee } from 'lucide-react';
 
 interface ExpenseItem {
   id: string;
@@ -10,7 +10,6 @@ interface ExpenseItem {
   category: string;
   amount: number;
   description?: string;
-  frequency?: string;
   created_at: string;
 }
 
@@ -19,7 +18,6 @@ export default function ExpenseManagerPage() {
   const [category, setCategory] = useState('Tea / Snacks');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [frequency, setFrequency] = useState('One-time');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -51,15 +49,13 @@ export default function ExpenseManagerPage() {
           title: expenseTitle,
           category,
           amount: parseFloat(amount),
-          description: description.trim(),
-          frequency
+          description: description.trim()
         }]);
 
       if (error) throw error;
 
       setAmount('');
       setDescription('');
-      setFrequency('One-time');
       fetchExpenses();
     } catch (err: any) {
       console.error(err);
@@ -97,7 +93,7 @@ export default function ExpenseManagerPage() {
         </div>
       </div>
 
-      <form onSubmit={handleAddExpense} className="grid grid-cols-1 md:grid-cols-5 gap-4 bg-slate-50 p-4 rounded-xl border">
+      <form onSubmit={handleAddExpense} className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-slate-50 p-4 rounded-xl border">
         <div>
           <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Category</label>
           <select
@@ -107,6 +103,7 @@ export default function ExpenseManagerPage() {
           >
             <option value="Tea / Snacks">Tea / Snacks</option>
             <option value="Stock Purchases">Stock Purchases</option>
+            <option value="Daily Pigmy / Savings Collection">Daily Pigmy / Savings Collection</option>
             <option value="Rent">Rent</option>
             <option value="Electricity">Electricity</option>
             <option value="Salary / Advance">Salary / Advance</option>
@@ -138,23 +135,6 @@ export default function ExpenseManagerPage() {
           />
         </div>
 
-        <div>
-          <label className="block text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
-            <Repeat className="w-3 h-3 text-violet-600" /> Recurring
-          </label>
-          <select
-            value={frequency}
-            onChange={(e) => setFrequency(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg bg-white text-sm font-semibold text-black"
-          >
-            <option value="One-time">One-time</option>
-            <option value="Daily">Daily</option>
-            <option value="Weekly">Weekly</option>
-            <option value="Monthly">Monthly</option>
-            <option value="Yearly">Yearly</option>
-          </select>
-        </div>
-
         <div className="flex items-end">
           <button
             type="submit"
@@ -173,7 +153,6 @@ export default function ExpenseManagerPage() {
               <th className="p-3">Date</th>
               <th className="p-3">Category</th>
               <th className="p-3">Description</th>
-              <th className="p-3 text-center">Frequency</th>
               <th className="p-3 text-right">Amount</th>
               <th className="p-3 text-center">Action</th>
             </tr>
@@ -181,7 +160,7 @@ export default function ExpenseManagerPage() {
           <tbody className="text-sm divide-y text-black font-medium">
             {expenses.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-8 text-center text-slate-400 font-normal">No recorded expenses yet.</td>
+                <td colSpan={5} className="py-8 text-center text-slate-400 font-normal">No recorded expenses yet.</td>
               </tr>
             ) : (
               expenses.map(item => (
@@ -189,15 +168,6 @@ export default function ExpenseManagerPage() {
                   <td className="p-3 text-xs text-slate-500">{new Date(item.created_at).toLocaleDateString('en-IN')}</td>
                   <td className="p-3 font-bold">{item.category}</td>
                   <td className="p-3 text-slate-600">{item.description || item.title || '-'}</td>
-                  <td className="p-3 text-center">
-                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
-                      item.frequency && item.frequency !== 'One-time' 
-                        ? 'bg-violet-100 text-violet-700' 
-                        : 'bg-slate-100 text-slate-600'
-                    }`}>
-                      {item.frequency || 'One-time'}
-                    </span>
-                  </td>
                   <td className="p-3 text-right font-black text-slate-800">₹{item.amount.toFixed(2)}</td>
                   <td className="p-3 text-center">
                     <button onClick={() => handleDeleteExpense(item.id)} className="text-red-500 hover:text-red-700">
