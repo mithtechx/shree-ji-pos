@@ -169,4 +169,16 @@ export default function ExpenseManagerPage() {
                   <td className="p-3 text-slate-600">{item.description || item.title || '-'}</td>
                   <td className="p-3 text-right font-black text-slate-800">₹{item.amount.toFixed(2)}</td>
                   <td className="p-3 text-center">
-                    <button onClick={() => handleDeleteExpense(item.id)} className="text-red-500
+                    <button onClick={() => handleDeleteExpense(item.id)} className="text-red-500 hover:text-red-700">
+                      <Trash2 className="w-4 h-4 inline" />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
