@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { TrendingUp, Calendar, Receipt, IndianRupee, Filter } from 'lucide-react';
+import { TrendingUp, Calendar, Receipt, IndianRupee, Filter, BarChart3, Percent } from 'lucide-react';
 
 interface Bill {
   id: string;
@@ -13,8 +13,15 @@ interface Bill {
   grand_total: number;
 }
 
+interface MonthlyAnalytics {
+  monthKey: string;
+  totalSales: number;
+  percentageShare: number;
+}
+
 export default function SalesTrackPage() {
   const [bills, setBills] = useState<Bill[]>([]);
+  const [allBillsForAnalytics, setAllBillsForAnalytics] = useState<Bill[]>([]);
   const [filterType, setFilterType] = useState<'today' | 'month' | 'year' | 'custom'>('today');
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [selectedMonth, setSelectedMonth] = useState<string>(new Date().toISOString().slice(0, 7)); // YYYY-MM
@@ -26,6 +33,10 @@ export default function SalesTrackPage() {
   useEffect(() => {
     fetchSalesData();
   }, [filterType, selectedDate, selectedMonth, selectedYear, startDate, endDate]);
+
+  useEffect(() => {
+    fetchMonthlyAnalyticsData();
+  }, []);
 
   const fetchSalesData = async () => {
     setLoading(true);
@@ -55,8 +66,37 @@ export default function SalesTrackPage() {
     setLoading(false);
   };
 
+  const fetchMonthlyAnalyticsData = async () => {
+    const { data, error } = await supabase.from('bills').select('grand_total, created_at');
+    if (!error && data) {
+      setAllBillsForAnalytics(data as Bill[]);
+    }
+  };
+
   const totalBills = bills.length;
   const totalSalesAmount = bills.reduce((sum, bill) => sum + (Number(bill.grand_total) || 0), 0);
+
+  // Monthly Breakdown Calculations
+  const lifetimeSalesTotal = allBillsForAnalytics.reduce((sum, b) => sum + (Number(b.grand_total) || 0), 0);
+  const monthlyMap: Record<string, number> = {};
+
+  allBillsForAnalytics.forEach((b) => {
+    const d = new Date(b.created_at);
+    const mKey = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    monthlyMap[mKey] = (monthlyMap[mKey] || 0) + (Number(b.grand_total) || 0);
+  });
+
+  const monthlyList: MonthlyAnalytics[] = Object.keys(monthlyMap).map((mKey) => {
+    const monthAmt = monthlyMap[mKey];
+    const pct = lifetimeSalesTotal > 0 ? (monthAmt / lifetimeSalesTotal) * 100 : 0;
+    return {
+      monthKey: mKey,
+      totalSales: monthAmt,
+      percentageShare: pct,
+    };
+  });
+
+  const highestMonthSales = monthlyList.reduce((max, item) => (item.totalSales > max ? item.totalSales : max), 0);
 
   return (
     <div className="p-6 bg-slate-900 min-h-screen text-white space-y-6">
@@ -159,12 +199,64 @@ export default function SalesTrackPage() {
 
         <div className="bg-slate-800 border border-slate-700 p-6 rounded-2xl flex items-center justify-between shadow-lg">
           <div>
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Total Revenue Collected</p>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Filtered Revenue Collected</p>
             <h2 className="text-3xl font-black text-emerald-400">₹{totalSalesAmount.toFixed(2)}</h2>
           </div>
           <div className="p-4 bg-emerald-600/20 text-emerald-400 rounded-2xl border border-emerald-500/30">
             <IndianRupee className="w-8 h-8" />
           </div>
+        </div>
+      </div>
+
+      {/* MONTH-WISE GRAPH & ANALYTICS SECTION */}
+      <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
+        <h2 className="text-lg font-bold flex items-center gap-2 text-white">
+          <BarChart3 className="text-violet-400 w-5 h-5" /> Month-Wise Sales Breakdown & Share
+        </h2>
+
+        <div className="border border-slate-700 rounded-xl overflow-hidden bg-slate-900">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-slate-800 text-slate-400 text-xs font-bold uppercase border-b border-slate-700">
+              <tr>
+                <th className="p-3">Month</th>
+                <th className="p-3 text-right">Revenue</th>
+                <th className="p-3 text-right">Sales Share (%)</th>
+                <th className="p-3">Monthly Graph</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-800 font-medium text-slate-200">
+              {monthlyList.length === 0 ? (
+                <tr>
+                  <td colSpan={4} className="py-6 text-center text-slate-500">
+                    No monthly breakdown data available.
+                  </td>
+                </tr>
+              ) : (
+                monthlyList.map((item, idx) => {
+                  const barWidth = highestMonthSales > 0 ? (item.totalSales / highestMonthSales) * 100 : 0;
+                  return (
+                    <tr key={idx} className="hover:bg-slate-800/40 transition">
+                      <td className="p-3 font-bold text-white">{item.monthKey}</td>
+                      <td className="p-3 text-right font-black text-emerald-400">
+                        ₹{item.totalSales.toFixed(2)}
+                      </td>
+                      <td className="p-3 text-right font-bold text-violet-400">
+                        {item.percentageShare.toFixed(1)}%
+                      </td>
+                      <td className="p-3 w-1/3">
+                        <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700">
+                          <div
+                            className="bg-violet-500 h-full rounded-full transition-all duration-300"
+                            style={{ width: `${barWidth}%` }}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
