@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Receipt, Plus, Trash2, Calendar, IndianRupee } from 'lucide-react';
+import { Receipt, Plus, Trash2, IndianRupee } from 'lucide-react';
 
 interface ExpenseItem {
   id: string;
+  title?: string;
   category: string;
   amount: number;
-  description: string;
+  description?: string;
   created_at: string;
 }
 
@@ -40,12 +41,15 @@ export default function ExpenseManagerPage() {
 
     setIsLoading(true);
     try {
+      const expenseTitle = description.trim() || category;
+
       const { error } = await supabase
         .from('expenses')
         .insert([{
+          title: expenseTitle,
           category,
           amount: parseFloat(amount),
-          description
+          description: description.trim()
         }]);
 
       if (error) throw error;
@@ -161,7 +165,7 @@ export default function ExpenseManagerPage() {
                 <tr key={item.id}>
                   <td className="p-3 text-xs text-slate-500">{new Date(item.created_at).toLocaleDateString('en-IN')}</td>
                   <td className="p-3 font-bold">{item.category}</td>
-                  <td className="p-3 text-slate-600">{item.description || '-'}</td>
+                  <td className="p-3 text-slate-600">{item.description || item.title || '-'}</td>
                   <td className="p-3 text-right font-black text-slate-800">₹{item.amount.toFixed(2)}</td>
                   <td className="p-3 text-center">
                     <button onClick={() => handleDeleteExpense(item.id)} className="text-red-500 hover:text-red-700">
