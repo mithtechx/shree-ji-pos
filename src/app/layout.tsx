@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, ShoppingBag, History, LogOut, Tags, Lock, User, TrendingUp, CalendarCheck, Receipt } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, History, LogOut, Tags, Lock, User, TrendingUp, CalendarCheck, Receipt, Wallet } from 'lucide-react';
 import './globals.css';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -44,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     { name: 'Billing', path: '/billing', icon: ShoppingBag },
     { name: 'Bill History', path: '/history', icon: History },
     { name: 'Sales Track', path: '/sales-track', icon: TrendingUp },
+    { name: 'Galla', path: '/galla', icon: Wallet },
     { name: 'Attendance', path: '/attendance', icon: CalendarCheck },
     { name: 'Expenses', path: '/expenses', icon: Receipt },
   ];
