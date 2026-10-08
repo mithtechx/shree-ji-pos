@@ -24,177 +24,187 @@ export default function StaffAttendancePage() {
     const { data } = await supabase
       .from('staff_attendance')
       .select('*')
-      .eq('attendance_date', selectedDate);
+      .eq('date', selectedDate);
 
     const map: Record<string, { status: string; notes: string }> = {};
-    SALESMEN.forEach((staff) => {
-      map[staff] = { status: 'Full Day', notes: '' };
+    SALESMEN.forEach(staff => {
+      map[staff] = { status: 'Present', notes: '' };
     });
 
     if (data) {
-      data.forEach((row) => {
+      data.forEach((row: any) => {
         map[row.staff_name] = { status: row.status, notes: row.notes || '' };
       });
     }
-
     setAttendanceMap(map);
   };
 
   const fetchMonthlySummary = async () => {
+    const startDate = `${selectedMonth}-01`;
+    const endDate = `${selectedMonth}-31`;
+
     const { data } = await supabase
       .from('staff_attendance')
       .select('*')
-      .gte('attendance_date', `${selectedMonth}-01`)
-      .lte('attendance_date', `${selectedMonth}-31`);
+      .gte('date', startDate)
+      .lte('date', endDate);
 
-    if (data) {
-      setMonthlyRecords(data);
-    }
+    setMonthlyRecords(data || []);
   };
 
   const handleStatusChange = (staff: string, status: string) => {
-    setAttendanceMap((prev) => ({
+    setAttendanceMap(prev => ({
       ...prev,
-      [staff]: { ...prev[staff], status },
+      [staff]: { ...prev[staff], status }
     }));
   };
 
   const handleNotesChange = (staff: string, notes: string) => {
-    setAttendanceMap((prev) => ({
+    setAttendanceMap(prev => ({
       ...prev,
-      [staff]: { ...prev[staff], notes },
+      [staff]: { ...prev[staff], notes }
     }));
   };
 
   const handleSaveAttendance = async () => {
-    const upsertData = SALESMEN.map((staff) => ({
-      staff_name: staff,
-      attendance_date: selectedDate,
-      status: attendanceMap[staff]?.status || 'Full Day',
-      notes: attendanceMap[staff]?.notes || '',
-    }));
+    try {
+      const payload = SALESMEN.map(staff => ({
+        date: selectedDate,
+        staff_name: staff,
+        status: attendanceMap[staff]?.status || 'Present',
+        notes: attendanceMap[staff]?.notes || ''
+      }));
 
-    const { error } = await supabase
-      .from('staff_attendance')
-      .upsert(upsertData, { onConflict: 'staff_name,attendance_date' });
+      const { error } = await supabase
+        .from('staff_attendance')
+        .upsert(payload, { onConflict: 'date,staff_name' });
 
-    if (!error) {
+      if (error) throw error;
+
       alert('Attendance saved successfully!');
       fetchMonthlySummary();
-    } else {
-      alert('Failed to save attendance.');
+    } catch (err: any) {
+      console.error(err);
+      alert(`Error saving attendance: ${err.message}`);
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b pb-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 uppercase tracking-tight flex items-center gap-2">
-            <CalendarCheck className="w-6 h-6 text-violet-600" /> Staff Attendance
+          <h1 className="text-xl font-black text-slate-800 flex items-center gap-2">
+            <Users className="text-violet-600 w-5 h-5" /> Staff Attendance Register
           </h1>
-          <p className="text-xs text-slate-500 font-semibold mt-1">
-            Track daily attendance, leaves, and half-days for staff
-          </p>
+          <p className="text-xs text-slate-500 font-medium">Manage daily staff presence and monthly tracking</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-slate-400" />
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="px-3 py-1.5 border rounded-lg bg-slate-50 text-sm font-semibold text-black"
+          />
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Daily Entry Form */}
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-          <div className="flex justify-between items-center border-b border-slate-100 pb-3">
-            <h2 className="text-sm font-bold text-slate-800 uppercase flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-violet-600" /> Daily Entry
-            </h2>
-            <input
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-2.5 py-1 border border-slate-200 rounded-lg text-xs font-semibold"
-            />
-          </div>
-
-          <div className="space-y-3">
-            {SALESMEN.map((staff) => (
-              <div key={staff} className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-sm text-slate-800">{staff}</span>
+      <div className="border rounded-xl overflow-hidden">
+        <table className="w-full text-left border-collapse">
+          <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500 border-b">
+            <tr>
+              <th className="p-3">Staff Name</th>
+              <th className="p-3">Status</th>
+              <th className="p-3">Notes / Remarks</th>
+            </tr>
+          </thead>
+          <tbody className="text-sm divide-y text-black font-medium">
+            {SALESMEN.map(staff => (
+              <tr key={staff}>
+                <td className="p-3 font-bold text-slate-800">{staff}</td>
+                <td className="p-3">
                   <select
-                    value={attendanceMap[staff]?.status || 'Full Day'}
+                    value={attendanceMap[staff]?.status || 'Present'}
                     onChange={(e) => handleStatusChange(staff, e.target.value)}
-                    className="px-2.5 py-1 border border-slate-200 rounded-lg text-xs font-bold bg-white"
+                    className="px-3 py-1.5 border rounded-lg bg-slate-50 text-xs font-bold text-black"
                   >
-                    <option value="Full Day">Full Day</option>
+                    <option value="Present">Present</option>
+                    <option value="Absent">Absent</option>
                     <option value="Half Day">Half Day</option>
                     <option value="Leave">Leave</option>
-                    <option value="Absent">Absent</option>
                   </select>
-                </div>
-                <input
-                  type="text"
-                  placeholder="Notes / Remarks..."
-                  value={attendanceMap[staff]?.notes || ''}
-                  onChange={(e) => handleNotesChange(staff, e.target.value)}
-                  className="w-full px-2.5 py-1 border border-slate-200 rounded-lg text-xs font-medium"
-                />
-              </div>
+                </td>
+                <td className="p-3">
+                  <input
+                    type="text"
+                    placeholder="Optional notes..."
+                    value={attendanceMap[staff]?.notes || ''}
+                    onChange={(e) => handleNotesChange(staff, e.target.value)}
+                    className="w-full px-3 py-1.5 border rounded-lg bg-slate-50 text-xs font-medium text-black"
+                  />
+                </td>
+              </tr>
             ))}
-          </div>
+          </tbody>
+        </table>
+      </div>
 
-          <button
-            onClick={handleSaveAttendance}
-            className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold rounded-xl shadow-sm text-sm transition flex items-center justify-center gap-2"
-          >
-            <Save className="w-4 h-4" /> SAVE TODAY'S ATTENDANCE
-          </button>
+      <div className="flex justify-end">
+        <button
+          onClick={handleSaveAttendance}
+          className="px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white font-bold text-sm rounded-xl transition flex items-center gap-2"
+        >
+          <Save className="w-4 h-4" /> Save Attendance
+        </button>
+      </div>
+
+      <div className="border-t pt-6 space-y-4">
+        <div className="flex justify-between items-center">
+          <h2 className="text-md font-bold text-slate-800 flex items-center gap-2">
+            <CalendarCheck className="w-4 h-4 text-violet-600" /> Monthly Summary
+          </h2>
+          <input
+            type="month"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            className="px-3 py-1.5 border rounded-lg bg-slate-50 text-sm font-semibold text-black"
+          />
         </div>
 
-        {/* Monthly Summary Matrix */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="bg-white p-4 rounded-2xl border border-slate-200 flex justify-between items-center">
-            <h2 className="text-sm font-bold text-slate-800 uppercase flex items-center gap-2">
-              <Users className="w-4 h-4 text-violet-600" /> Monthly Summary
-            </h2>
-            <input
-              type="month"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="px-3 py-1.5 border border-slate-200 rounded-lg text-xs font-semibold"
-            />
-          </div>
-
-          <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-slate-50 text-slate-500 text-xs uppercase font-bold border-b border-slate-200">
+        <div className="border rounded-xl overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead className="bg-slate-50 text-xs font-bold uppercase text-slate-500 border-b">
+              <tr>
+                <th className="p-3">Date</th>
+                <th className="p-3">Staff Name</th>
+                <th className="p-3">Status</th>
+                <th className="p-3">Notes</th>
+              </tr>
+            </thead>
+            <tbody className="text-xs divide-y text-black font-medium">
+              {monthlyRecords.length === 0 ? (
                 <tr>
-                  <th className="p-3.5">Staff Name</th>
-                  <th className="p-3.5 text-center">Full Days</th>
-                  <th className="p-3.5 text-center">Half Days</th>
-                  <th className="p-3.5 text-center">Leaves</th>
-                  <th className="p-3.5 text-center">Absents</th>
+                  <td colSpan={4} className="py-6 text-center text-slate-400">No attendance records found for selected month.</td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 font-semibold text-slate-700">
-                {SALESMEN.map((staff) => {
-                  const staffLogs = monthlyRecords.filter((r) => r.staff_name === staff);
-                  const fullDays = staffLogs.filter((r) => r.status === 'Full Day').length;
-                  const halfDays = staffLogs.filter((r) => r.status === 'Half Day').length;
-                  const leaves = staffLogs.filter((r) => r.status === 'Leave').length;
-                  const absents = staffLogs.filter((r) => r.status === 'Absent').length;
-
-                  return (
-                    <tr key={staff} className="hover:bg-slate-50">
-                      <td className="p-3.5 font-bold text-slate-800">{staff}</td>
-                      <td className="p-3.5 text-center text-emerald-600 font-bold">{fullDays}</td>
-                      <td className="p-3.5 text-center text-amber-600 font-bold">{halfDays}</td>
-                      <td className="p-3.5 text-center text-blue-600 font-bold">{leaves}</td>
-                      <td className="p-3.5 text-center text-red-600 font-bold">{absents}</td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+              ) : (
+                monthlyRecords.map(record => (
+                  <tr key={record.id || `${record.date}-${record.staff_name}`}>
+                    <td className="p-3">{record.date}</td>
+                    <td className="p-3 font-bold">{record.staff_name}</td>
+                    <td className="p-3">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        record.status === 'Present' ? 'bg-emerald-100 text-emerald-700' :
+                        record.status === 'Absent' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                      }`}>
+                        {record.status}
+                      </span>
+                    </td>
+                    <td className="p-3 text-slate-500">{record.notes || '-'}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
