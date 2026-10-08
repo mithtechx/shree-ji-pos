@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import ThermalReceipt from '../components/ThermalReceipt';
-import { History, Search, Printer, Eye, X, UserCheck } from 'lucide-react';
+import { History, Search, Printer, Eye, X, UserCheck, CreditCard } from 'lucide-react';
 
 interface BillRecord {
   id: string;
@@ -11,6 +11,7 @@ interface BillRecord {
   customer_name: string;
   customer_mobile: string;
   salesman_name?: string;
+  payment_mode?: string; // <--- Added payment_mode field
   subtotal: number;
   discount_value: number;
   grand_total: number;
@@ -78,7 +79,8 @@ export default function BillHistoryLog() {
     b.invoice_number?.toString().includes(searchQuery) ||
     b.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (b.customer_mobile && b.customer_mobile.includes(searchQuery)) ||
-    (b.salesman_name && b.salesman_name.toLowerCase().includes(searchQuery.toLowerCase()))
+    (b.salesman_name && b.salesman_name.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (b.payment_mode && b.payment_mode.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -93,7 +95,7 @@ export default function BillHistoryLog() {
       <div className="relative max-w-md print:hidden">
         <input
           type="text"
-          placeholder="Search by Invoice #, Name, Mobile, or Salesman..."
+          placeholder="Search by Invoice #, Name, Mobile, Salesman, or Mode..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           className="w-full pl-9 pr-4 py-2 border rounded-xl bg-white text-xs font-medium text-black focus:outline-none"
@@ -109,6 +111,7 @@ export default function BillHistoryLog() {
               <th className="p-3">Invoice ID</th>
               <th className="p-3">Customer Info</th>
               <th className="p-3">Salesman</th>
+              <th className="p-3">Payment Mode</th> {/* <--- ADDED COLUMN HEADER */}
               <th className="p-3">Date</th>
               <th className="p-3 text-right">Total Discount</th>
               <th className="p-3 text-right">Paid Amount</th>
@@ -118,7 +121,9 @@ export default function BillHistoryLog() {
           <tbody className="text-xs font-medium text-black divide-y bg-white">
             {filteredBills.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-slate-400 font-normal">No past billing history matches your query parameters.</td>
+                <td colSpan={8} className="py-8 text-center text-slate-400 font-normal">
+                  No past billing history matches your query parameters.
+                </td>
               </tr>
             ) : (
               filteredBills.map(b => (
@@ -148,11 +153,25 @@ export default function BillHistoryLog() {
                     </div>
                   </td>
 
+                  {/* PAYMENT MODE BADGE COLUMN */}
+                  <td className="p-3">
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${
+                      (b.payment_mode || 'Cash').toLowerCase() === 'online' || (b.payment_mode || '').toLowerCase() === 'upi'
+                        ? 'bg-violet-50 text-violet-700 border-violet-200'
+                        : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                    }`}>
+                      <CreditCard className="w-3 h-3" />
+                      {b.payment_mode || 'Cash'}
+                    </span>
+                  </td>
+
                   <td className="p-3 text-slate-500">{new Date(b.created_at).toLocaleDateString('en-IN')}</td>
                   <td className="p-3 text-right text-red-500">₹{Number(b.discount_value || 0).toFixed(2)}</td>
                   <td className="p-3 text-right font-black text-slate-900">₹{Number(b.grand_total).toFixed(2)}</td>
                   <td className="p-3 text-center space-x-2">
-                    <button onClick={() => handleViewBillDetails(b)} className="p-1.5 bg-slate-100 hover:bg-violet-100 hover:text-violet-700 rounded-lg text-slate-600 transition inline-flex items-center"><Eye className="w-3.5 h-3.5"/></button>
+                    <button onClick={() => handleViewBillDetails(b)} className="p-1.5 bg-slate-100 hover:bg-violet-100 hover:text-violet-700 rounded-lg text-slate-600 transition inline-flex items-center">
+                      <Eye className="w-3.5 h-3.5"/>
+                    </button>
                   </td>
                 </tr>
               ))
@@ -180,6 +199,7 @@ export default function BillHistoryLog() {
                 customerName={selectedBill.customer_name}
                 customerMobile={selectedBill.customer_mobile}
                 salesmanName={selectedBill.salesman_name || ''}
+                paymentMode={selectedBill.payment_mode || 'Cash'} // <--- Passed paymentMode here
                 items={billItems.length > 0 ? billItems : [{product_name: "Loading items...", quantity: 1, price: selectedBill.grand_total}]}
                 subtotal={selectedBill.subtotal}
                 discountValue={selectedBill.discount_value}
