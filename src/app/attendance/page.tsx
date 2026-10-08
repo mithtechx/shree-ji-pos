@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../../lib/supabase';
 import { CalendarCheck, Save, Users, Calendar } from 'lucide-react';
 
 const SALESMEN = ['Rahul', 'Akash', 'Ashish', 'Sales 4', 'Sales 5'];
