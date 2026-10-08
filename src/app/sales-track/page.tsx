@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { TrendingUp, Calendar, Receipt, IndianRupee, Filter, BarChart3, Percent } from 'lucide-react';
+import { TrendingUp, Receipt, IndianRupee, Filter, BarChart3 } from 'lucide-react';
 
 interface Bill {
   id: string;
@@ -208,59 +208,58 @@ export default function SalesTrackPage() {
         </div>
       </div>
 
-      {/* MONTH-WISE GRAPH & ANALYTICS SECTION */}
-      <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-4">
-        <h2 className="text-lg font-bold flex items-center gap-2 text-white">
-          <BarChart3 className="text-violet-400 w-5 h-5" /> Month-Wise Sales Breakdown & Share
-        </h2>
-
-        <div className="border border-slate-700 rounded-xl overflow-hidden bg-slate-900">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-slate-800 text-slate-400 text-xs font-bold uppercase border-b border-slate-700">
-              <tr>
-                <th className="p-3">Month</th>
-                <th className="p-3 text-right">Revenue</th>
-                <th className="p-3 text-right">Sales Share (%)</th>
-                <th className="p-3">Monthly Graph</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-800 font-medium text-slate-200">
-              {monthlyList.length === 0 ? (
-                <tr>
-                  <td colSpan={4} className="py-6 text-center text-slate-500">
-                    No monthly breakdown data available.
-                  </td>
-                </tr>
-              ) : (
-                monthlyList.map((item, idx) => {
-                  const barWidth = highestMonthSales > 0 ? (item.totalSales / highestMonthSales) * 100 : 0;
-                  return (
-                    <tr key={idx} className="hover:bg-slate-800/40 transition">
-                      <td className="p-3 font-bold text-white">{item.monthKey}</td>
-                      <td className="p-3 text-right font-black text-emerald-400">
-                        ₹{item.totalSales.toFixed(2)}
-                      </td>
-                      <td className="p-3 text-right font-bold text-violet-400">
-                        {item.percentageShare.toFixed(1)}%
-                      </td>
-                      <td className="p-3 w-1/3">
-                        <div className="w-full bg-slate-800 h-3 rounded-full overflow-hidden border border-slate-700">
-                          <div
-                            className="bg-violet-500 h-full rounded-full transition-all duration-300"
-                            style={{ width: `${barWidth}%` }}
-                          />
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+      {/* VERTICAL MONTHLY SALES GRAPH & SHARE */}
+      <div className="bg-slate-800 p-6 rounded-2xl border border-slate-700 space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-lg font-bold flex items-center gap-2 text-white">
+            <BarChart3 className="text-violet-400 w-5 h-5" /> Monthly Sales Trend & Share Breakdown
+          </h2>
+          <span className="text-xs font-semibold text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-700">
+            Total Revenue: ₹{lifetimeSalesTotal.toFixed(2)}
+          </span>
         </div>
+
+        {monthlyList.length === 0 ? (
+          <p className="py-12 text-center text-slate-500 text-sm">No monthly sales data found.</p>
+        ) : (
+          <div className="p-6 bg-slate-900 border border-slate-700/80 rounded-xl space-y-4">
+            {/* Chart Area */}
+            <div className="flex items-end justify-between gap-4 h-64 pt-8 pb-2 border-b-2 border-slate-700 px-2 overflow-x-auto">
+              {monthlyList.map((item, idx) => {
+                const heightPercentage = highestMonthSales > 0 ? (item.totalSales / highestMonthSales) * 100 : 0;
+                return (
+                  <div key={idx} className="flex-1 min-w-[70px] flex flex-col items-center h-full justify-end group">
+                    {/* Tooltip & Value details above bar */}
+                    <div className="mb-2 text-center transition-transform group-hover:-translate-y-1">
+                      <span className="text-xs font-black text-emerald-400 block">
+                        ₹{item.totalSales >= 1000 ? `${(item.totalSales / 1000).toFixed(1)}k` : item.totalSales.toFixed(0)}
+                      </span>
+                      <span className="text-[10px] font-extrabold text-violet-400 bg-violet-900/40 px-1.5 py-0.5 rounded border border-violet-700/50">
+                        {item.percentageShare.toFixed(1)}%
+                      </span>
+                    </div>
+
+                    {/* Vertical Bar Container */}
+                    <div className="w-full max-w-[42px] bg-slate-800/80 rounded-t-lg h-full flex items-end overflow-hidden p-1 border border-slate-700/50">
+                      <div
+                        className="w-full bg-gradient-to-t from-violet-700 to-violet-500 rounded-t transition-all duration-500 group-hover:from-emerald-600 group-hover:to-emerald-400"
+                        style={{ height: `${Math.max(heightPercentage, 4)}%` }}
+                      />
+                    </div>
+
+                    {/* Month Label (X-Axis) */}
+                    <span className="mt-3 text-xs font-bold text-slate-300 whitespace-nowrap text-center">
+                      {item.monthKey}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* DETAILED TABLE */}
+      {/* DETAILED BILLS TABLE */}
       <div className="bg-slate-800 rounded-2xl border border-slate-700 overflow-hidden">
         <table className="w-full text-left text-sm">
           <thead className="bg-slate-900 text-slate-400 text-xs font-bold uppercase border-b border-slate-700">
