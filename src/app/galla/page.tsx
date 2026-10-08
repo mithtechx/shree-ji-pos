@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Wallet, Save, Trash2, IndianRupee, MinusCircle, PlusCircle, Calendar } from 'lucide-react';
+import { Wallet, Save, Trash2, MinusCircle, Calendar } from 'lucide-react';
 
 interface GallaLog {
   id: string;
@@ -29,38 +29,34 @@ export default function GallaPage() {
   }, []);
 
   const fetchTodayData = async () => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    // Local start & end of day ISO strings to match today's date
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0).toISOString();
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999).toISOString();
 
-    // 1. Fetch Today's Total Sales
-    const { data: salesData } = await supabase
-      .from('sales')
-      .select('amount, created_at');
+    // 1. Fetch Today's Total Sales from 'bills' table using 'grand_total'
+    const { data: billsData, error: billsError } = await supabase
+      .from('bills')
+      .select('grand_total')
+      .gte('created_at', startOfDay)
+      .lte('created_at', endOfDay);
 
-    let sumSales = 0;
-    if (salesData) {
-      salesData.forEach((s: any) => {
-        if (s.created_at && s.created_at.startsWith(todayStr)) {
-          sumSales += Number(s.amount) || 0;
-        }
-      });
+    if (!billsError && billsData) {
+      const totalSales = billsData.reduce((sum, b) => sum + (Number(b.grand_total) || 0), 0);
+      setSalesToday(totalSales);
     }
 
-    // 2. Fetch Today's Recorded Expenses
-    const { data: expenseData } = await supabase
+    // 2. Fetch Today's Recorded Expenses from 'expenses' table
+    const { data: expenseData, error: expError } = await supabase
       .from('expenses')
-      .select('amount, created_at');
+      .select('amount')
+      .gte('created_at', startOfDay)
+      .lte('created_at', endOfDay);
 
-    let sumExpenses = 0;
-    if (expenseData) {
-      expenseData.forEach((e: any) => {
-        if (e.created_at && e.created_at.startsWith(todayStr)) {
-          sumExpenses += Number(e.amount) || 0;
-        }
-      });
+    if (!expError && expenseData) {
+      const totalExp = expenseData.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+      setExpensesToday(totalExp);
     }
-
-    setSalesToday(sumSales);
-    setExpensesToday(sumExpenses);
   };
 
   const fetchGallaHistory = async () => {
