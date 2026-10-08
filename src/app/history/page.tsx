@@ -17,7 +17,7 @@ interface BillRecord {
   created_at: string;
 }
 
-const SALESMEN_LIST = ["Rahul", "Ashish", "Aksh", "Rupali Tai", "Sale 5"];
+const SALESMEN_LIST = ['Rahul', 'Akash', 'Ashish', 'Sales 4', 'Sales 5'];
 
 export default function BillHistoryLog() {
   const [bills, setBills] = useState<BillRecord[]>([]);
@@ -30,7 +30,7 @@ export default function BillHistoryLog() {
       .from('bills')
       .select('*')
       .order('created_at', { ascending: false });
-    
+
     if (data) setBills(data);
   };
 
@@ -43,7 +43,7 @@ export default function BillHistoryLog() {
     try {
       const { error } = await supabase
         .from('bills')
-        .update({ salesman_name: newSalesman })
+        .update({ salesman_name: newSalesman || null })
         .eq('id', billId);
 
       if (error) throw error;
@@ -51,7 +51,7 @@ export default function BillHistoryLog() {
       setBills(prev =>
         prev.map(b => (b.id === billId ? { ...b, salesman_name: newSalesman } : b))
       );
-      
+
       if (selectedBill && selectedBill.id === billId) {
         setSelectedBill(prev => prev ? { ...prev, salesman_name: newSalesman } : null);
       }
@@ -66,7 +66,7 @@ export default function BillHistoryLog() {
       .from('bill_items')
       .select('*')
       .eq('bill_id', bill.id);
-    
+
     setBillItems(data || []);
   };
 
@@ -74,9 +74,9 @@ export default function BillHistoryLog() {
     window.print();
   };
 
-  const filteredBills = bills.filter(b => 
-    b.invoice_number.toString().includes(searchQuery) ||
-    b.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+  const filteredBills = bills.filter(b =>
+    b.invoice_number?.toString().includes(searchQuery) ||
+    b.customer_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (b.customer_mobile && b.customer_mobile.includes(searchQuery)) ||
     (b.salesman_name && b.salesman_name.toLowerCase().includes(searchQuery.toLowerCase()))
   );
@@ -91,9 +91,9 @@ export default function BillHistoryLog() {
 
       {/* Search Input Filter */}
       <div className="relative max-w-md print:hidden">
-        <input 
-          type="text" 
-          placeholder="Search by Invoice #, Name, Mobile, or Salesman..." 
+        <input
+          type="text"
+          placeholder="Search by Invoice #, Name, Mobile, or Salesman..."
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           className="w-full pl-9 pr-4 py-2 border rounded-xl bg-white text-xs font-medium text-black focus:outline-none"
@@ -134,10 +134,11 @@ export default function BillHistoryLog() {
                     <div className="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 border border-slate-300 px-2 py-1 rounded-lg transition">
                       <UserCheck className="w-3.5 h-3.5 text-violet-600 shrink-0"/>
                       <select
-                        value={b.salesman_name || 'Rahul'}
+                        value={b.salesman_name || ''}
                         onChange={(e) => handleSalesmanChange(b.id, e.target.value)}
                         className="bg-transparent text-slate-800 text-[11px] font-bold focus:outline-none cursor-pointer pr-1"
                       >
+                        <option value="">-- Select Salesman --</option>
                         {SALESMEN_LIST.map((name) => (
                           <option key={name} value={name}>
                             {name}
@@ -164,21 +165,21 @@ export default function BillHistoryLog() {
       {selectedBill && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 print:static print:bg-white print:p-0">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto print:shadow-none print:p-0 print:max-h-full">
-            
+
             <button onClick={() => setSelectedBill(null)} className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 print:hidden">
               <X className="w-5 h-5"/>
             </button>
 
             <h3 className="text-sm font-black text-slate-700 uppercase tracking-wider mb-4 print:hidden">Invoice Receipt Preview</h3>
-            
+
             {/* Embedded Active Printing Sheet Canvas */}
             <div className="border border-slate-200 p-2 bg-slate-50 rounded-xl mb-4 print:border-none print:p-0 print:bg-white">
-              <ThermalReceipt 
+              <ThermalReceipt
                 invoiceNumber={selectedBill.invoice_number}
                 date={new Date(selectedBill.created_at).toLocaleDateString('en-IN')}
                 customerName={selectedBill.customer_name}
                 customerMobile={selectedBill.customer_mobile}
-                salesmanName={selectedBill.salesman_name || 'N/A'}
+                salesmanName={selectedBill.salesman_name || ''}
                 items={billItems.length > 0 ? billItems : [{product_name: "Loading items...", quantity: 1, price: selectedBill.grand_total}]}
                 subtotal={selectedBill.subtotal}
                 discountValue={selectedBill.discount_value}
