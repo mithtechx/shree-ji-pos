@@ -13,12 +13,14 @@ interface CartItem {
   barcode: string;
 }
 
+const SALESMEN = ['Rahul', 'Akash', 'Ashish', 'Sales 4', 'Sales 5'];
+
 export default function StandaloneBilling() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [barcodeInput, setBarcodeInput] = useState('');
   const [customerName, setCustomerName] = useState('Cash Customer');
   const [customerMobile, setCustomerMobile] = useState('');
-  const [salesmanName, setSalesmanName] = useState('Rahul');
+  const [salesmanName, setSalesmanName] = useState('');
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [customDiscount, setCustomDiscount] = useState<number>(0);
   const [isPrinting, setIsPrinting] = useState(false);
@@ -83,7 +85,7 @@ export default function StandaloneBilling() {
       alert("Your cart is empty!");
       return;
     }
-    
+
     setIsPrinting(true);
     setInvoiceCounter(prev => prev + 1);
 
@@ -106,7 +108,7 @@ export default function StandaloneBilling() {
         .insert([{ 
           customer_name: currentCustomer,
           customer_mobile: customerMobile || null,
-          salesman_name: salesmanName,
+          salesman_name: salesmanName || null,
           subtotal: currentSubtotal,
           discount_value: calculatedDiscount,
           grand_total: currentGrandTotal,
@@ -143,7 +145,7 @@ export default function StandaloneBilling() {
         setCart([]);
         setCustomerName('Cash Customer');
         setCustomerMobile('');
-        setSalesmanName('Rahul');
+        setSalesmanName('');
         setDiscountPercent(0);
         setCustomDiscount(0);
       }, 350);
@@ -181,11 +183,12 @@ export default function StandaloneBilling() {
                 onChange={e => setSalesmanName(e.target.value)} 
                 className="w-full px-3 py-2 border rounded-lg bg-slate-50 font-medium text-sm text-black focus:outline-none focus:ring-2 focus:ring-violet-600"
               >
-                <option value="Rahul">Rahul</option>
-                <option value="Ashish">Ashish</option>
-                <option value="Aksh">Aksh</option>
-                <option value="Rupali Tai">Rupali Tai</option>
-                <option value="Sale 5">Sale 5</option>
+                <option value="">-- Select Salesman --</option>
+                {SALESMEN.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
               </select>
             </div>
           </div>
