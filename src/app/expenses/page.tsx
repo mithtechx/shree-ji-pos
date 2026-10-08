@@ -103,7 +103,7 @@ export default function ExpenseManagerPage() {
           >
             <option value="Tea / Snacks">Tea / Snacks</option>
             <option value="Stock Purchases">Stock Purchases</option>
-            <option value="Daily Pigmy / Savings Collection">Daily Pigmy / Savings Collection</option>
+            <option value="Recurring">Recurring</option>
             <option value="Rent">Rent</option>
             <option value="Electricity">Electricity</option>
             <option value="Salary / Advance">Salary / Advance</option>
