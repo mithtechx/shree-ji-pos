@@ -10,7 +10,7 @@ interface ExpenseItem {
   category: string;
   amount: number;
   description?: string;
-  is_recurring?: boolean;
+  frequency?: string;
   created_at: string;
 }
 
@@ -19,7 +19,7 @@ export default function ExpenseManagerPage() {
   const [category, setCategory] = useState('Tea / Snacks');
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
-  const [isRecurring, setIsRecurring] = useState(false);
+  const [frequency, setFrequency] = useState('One-time');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -52,14 +52,14 @@ export default function ExpenseManagerPage() {
           category,
           amount: parseFloat(amount),
           description: description.trim(),
-          is_recurring: isRecurring
+          frequency
         }]);
 
       if (error) throw error;
 
       setAmount('');
       setDescription('');
-      setIsRecurring(false);
+      setFrequency('One-time');
       fetchExpenses();
     } catch (err: any) {
       console.error(err);
@@ -138,16 +138,21 @@ export default function ExpenseManagerPage() {
           />
         </div>
 
-        <div className="flex items-center gap-2 pt-5">
-          <label className="inline-flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-700">
-            <input
-              type="checkbox"
-              checked={isRecurring}
-              onChange={(e) => setIsRecurring(e.target.checked)}
-              className="w-4 h-4 text-violet-600 rounded border-slate-300 focus:ring-violet-500"
-            />
-            <Repeat className="w-3.5 h-3.5 text-violet-600" /> Recurring
+        <div>
+          <label className="block text-xs font-bold text-slate-500 uppercase mb-1 flex items-center gap-1">
+            <Repeat className="w-3 h-3 text-violet-600" /> Recurring
           </label>
+          <select
+            value={frequency}
+            onChange={(e) => setFrequency(e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg bg-white text-sm font-semibold text-black"
+          >
+            <option value="One-time">One-time</option>
+            <option value="Daily">Daily</option>
+            <option value="Weekly">Weekly</option>
+            <option value="Monthly">Monthly</option>
+            <option value="Yearly">Yearly</option>
+          </select>
         </div>
 
         <div className="flex items-end">
@@ -168,7 +173,7 @@ export default function ExpenseManagerPage() {
               <th className="p-3">Date</th>
               <th className="p-3">Category</th>
               <th className="p-3">Description</th>
-              <th className="p-3 text-center">Type</th>
+              <th className="p-3 text-center">Frequency</th>
               <th className="p-3 text-right">Amount</th>
               <th className="p-3 text-center">Action</th>
             </tr>
@@ -185,13 +190,13 @@ export default function ExpenseManagerPage() {
                   <td className="p-3 font-bold">{item.category}</td>
                   <td className="p-3 text-slate-600">{item.description || item.title || '-'}</td>
                   <td className="p-3 text-center">
-                    {item.is_recurring ? (
-                      <span className="bg-violet-100 text-violet-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                        <Repeat className="w-2.5 h-2.5" /> Recurring
-                      </span>
-                    ) : (
-                      <span className="text-slate-400 text-xs">-</span>
-                    )}
+                    <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full inline-flex items-center gap-1 ${
+                      item.frequency && item.frequency !== 'One-time' 
+                        ? 'bg-violet-100 text-violet-700' 
+                        : 'bg-slate-100 text-slate-600'
+                    }`}>
+                      {item.frequency || 'One-time'}
+                    </span>
                   </td>
                   <td className="p-3 text-right font-black text-slate-800">₹{item.amount.toFixed(2)}</td>
                   <td className="p-3 text-center">
