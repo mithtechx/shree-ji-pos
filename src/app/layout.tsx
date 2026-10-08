@@ -2,19 +2,17 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, ShoppingBag, History, LogOut, Tags, Lock, User, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, History, LogOut, Tags, Lock, User, TrendingUp, CalendarCheck, Receipt } from 'lucide-react';
 import './globals.css';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   
-  // Guard state to keep terminal locked until credentials match
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
 
-  // Check if they previously logged in during this browser session
   useEffect(() => {
     const sessionToken = sessionStorage.getItem('shree_ji_auth');
     if (sessionToken === 'active') {
@@ -28,7 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       sessionStorage.setItem('shree_ji_auth', 'active');
       setIsAuthenticated(true);
     } else {
-      alert('Invalid Store Credentials! Please try again.');
+      alert('Invalid Store Credentials!');
     }
   };
 
@@ -40,23 +38,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     router.push('/');
   };
 
-  // Updated navigation list containing Sales Track below Bill History
   const menuItems = [
     { name: 'Dashboard', path: '/', icon: LayoutDashboard },
     { name: 'Products', path: '/inventory', icon: Tags },
     { name: 'Billing', path: '/billing', icon: ShoppingBag },
     { name: 'Bill History', path: '/history', icon: History },
     { name: 'Sales Track', path: '/sales-track', icon: TrendingUp },
+    { name: 'Attendance', path: '/attendance', icon: CalendarCheck },
+    { name: 'Expenses', path: '/expenses', icon: Receipt },
   ];
 
-  // 1. Terminals are LOCKED until authorized
   if (!isAuthenticated) {
     return (
       <html lang="en">
         <body className="bg-slate-900 flex items-center justify-center min-h-screen p-4 font-sans antialiased">
           <div className="bg-white w-full max-w-md rounded-2xl p-8 shadow-2xl">
             <div className="text-center mb-8">
-              <div className="mx-auto w-16 h-16 bg-violet-600 rounded-2xl flex items-center justify-center mb-4 text-white shadow-md font-bold text-2xl">
+              <div className="mx-auto w-16 h-16 bg-violet-600 rounded-2xl flex items-center justify-center mb-4 text-white font-bold text-2xl">
                 🏪
               </div>
               <h2 className="text-2xl font-black text-slate-800 tracking-tight">SHREE JI COLLECTION</h2>
@@ -73,14 +71,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     value={username}
                     onChange={e => setUsername(e.target.value)}
                     placeholder="Enter username..." 
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 bg-slate-50 rounded-xl text-sm focus:outline-none focus:border-violet-600 focus:bg-white text-black font-semibold"
+                    className="w-full pl-10 pr-4 py-3 border border-slate-200 bg-slate-50 rounded-xl text-sm font-semibold text-black"
                   />
                   <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Secure Pin/Password</label>
+                <label className="block text-xs font-bold text-slate-700 uppercase mb-2">Password</label>
                 <div className="relative">
                   <input 
                     type="password" 
@@ -88,7 +86,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     value={password}
                     onChange={e => setPassword(e.target.value)}
                     placeholder="••••••••" 
-                    className="w-full pl-10 pr-4 py-3 border border-slate-200 bg-slate-50 rounded-xl text-sm focus:outline-none focus:border-violet-600 focus:bg-white text-black font-semibold"
+                    className="w-full pl-10 pr-4 py-3 border border-slate-200 bg-slate-50 rounded-xl text-sm font-semibold text-black"
                   />
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
                 </div>
@@ -107,12 +105,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     );
   }
 
-  // 2. Renders layout screens instantly ONCE unlocked successfully
   return (
     <html lang="en">
       <body className="bg-slate-100 text-slate-900 font-sans antialiased">
         <div className="flex min-h-screen print:bg-white">
-          {/* Permanent Sidebar Menu Panel */}
           <aside className="w-64 bg-[#111625] text-slate-300 flex flex-col justify-between p-4 border-r border-slate-800 print:hidden shrink-0">
             <div>
               <div className="py-4 border-b border-slate-800 mb-6 px-2">
@@ -143,7 +139,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </nav>
             </div>
 
-            {/* Logout Trigger Component Row */}
             <button
               onClick={handleLogout}
               className="w-full flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-bold bg-red-900/30 text-red-400 hover:bg-red-600 hover:text-white transition"
@@ -153,7 +148,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </button>
           </aside>
 
-          {/* Dynamic Content Core Router */}
           <main className="flex-1 min-w-0 p-8 print:p-0">
             {children}
           </main>
