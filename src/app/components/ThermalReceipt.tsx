@@ -4,12 +4,9 @@ import React from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 
 interface ReceiptItem {
-  product_name?: string;
-  name?: string;
-  quantity?: number;
-  cartQuantity?: number;
-  price?: number;
-  selling_price?: number;
+  product_name: string;
+  quantity: number;
+  price: number;
 }
 
 interface ThermalReceiptProps {
@@ -32,13 +29,13 @@ export default function ThermalReceipt({
   customerMobile = "",
   salesmanName = "Rahul",
   paymentMode = "Cash",
-  items = [],
-  subtotal = 0,
-  discountValue = 0,
-  grandTotal = 0
+  items,
+  subtotal,
+  discountValue,
+  grandTotal
 }: ThermalReceiptProps) {
 
-  // Standard India UPI Intent String
+  // Standard India UPI Intent String pointing to your phone number
   const upiString = `upi://pay?pa=9975379151@pthdfc&pn=SHREE%20JI%20COLLECTION&am=${grandTotal.toFixed(2)}&cu=INR`;
 
   return (
@@ -55,8 +52,8 @@ export default function ThermalReceipt({
         <div><strong>Date:</strong> {date}</div>
         <div><strong>Customer:</strong> {customerName}</div>
         {customerMobile && <div><strong>Mobile:</strong> {customerMobile}</div>}
-        {salesmanName && <div><strong>Salesman:</strong> {salesmanName}</div>}
-        <div><strong>Payment Mode:</strong> <span className="uppercase font-bold">{paymentMode}</span></div>
+        <div><strong>Salesman:</strong> {salesmanName}</div>
+        <div><strong>Payment Mode:</strong> {paymentMode}</div>
       </div>
 
       <p className="text-xs text-center">----------------------------------------</p>
@@ -71,20 +68,14 @@ export default function ThermalReceipt({
           </tr>
         </thead>
         <tbody>
-          {items.map((item, index) => {
-            const name = item.product_name || item.name || "Garment Item";
-            const qty = Number(item.quantity || item.cartQuantity || 1);
-            const price = Number(item.price || item.selling_price || 0);
-
-            return (
-              <tr key={index} className="border-b border-dotted border-gray-200">
-                <td className="py-1 max-w-[120px] truncate">{name}</td>
-                <td className="text-center py-1">{qty}</td>
-                <td className="text-right py-1">₹{price.toFixed(2)}</td>
-                <td className="text-right py-1">₹{(qty * price).toFixed(2)}</td>
-              </tr>
-            );
-          })}
+          {items.map((item, index) => (
+            <tr key={index} className="border-b border-dotted border-gray-200">
+              <td className="py-1 max-w-[120px] truncate">{item.product_name}</td>
+              <td className="text-center py-1">{item.quantity}</td>
+              <td className="text-right py-1">₹{item.price.toFixed(2)}</td>
+              <td className="text-right py-1">₹{(item.quantity * item.price).toFixed(2)}</td>
+            </tr>
+          ))}
         </tbody>
       </table>
 
@@ -107,21 +98,16 @@ export default function ThermalReceipt({
         </div>
       </div>
 
-      {/* UPI QR Code Block - Displays for Online/UPI transactions */}
-      {paymentMode.toLowerCase() !== 'cash' && (
-        <>
-          <p className="text-xs text-center my-3">----------------------------------------</p>
-          <div className="flex flex-col items-center justify-center my-4">
-            <p className="text-[10px] font-bold mb-1 uppercase tracking-tight">Scan to Pay with Any UPI App</p>
-            <div className="p-1.5 bg-white border border-black rounded">
-              <QRCodeSVG value={upiString} size={130} level="M" />
-            </div>
-            <p className="text-xs font-bold mt-2">AMOUNT: ₹{grandTotal.toFixed(2)}</p>
-          </div>
-        </>
-      )}
-
       <p className="text-xs text-center my-3">----------------------------------------</p>
+
+      {/* UPI QR Printing Block */}
+      <div className="flex flex-col items-center justify-center my-4">
+        <p className="text-[10px] font-bold mb-1 uppercase tracking-tight">Scan to Pay with Any UPI App</p>
+        <div className="p-1.5 bg-white border border-black rounded">
+          <QRCodeSVG value={upiString} size={130} level="M" />
+        </div>
+        <p className="text-xs font-bold mt-2">AMOUNT: ₹{grandTotal.toFixed(2)}</p>
+      </div>
 
       <div className="text-center text-[11px] mt-4 space-y-0.5">
         <p className="font-semibold">Thank You for Your Visit!</p>
