@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import ThermalReceipt from '../components/ThermalReceipt';
-import { History, Search, Printer, Eye, X, UserCheck, CreditCard } from 'lucide-react';
+import { History, Search, Printer, Eye, X, UserCheck, CreditCard, Wallet, Trash2 } from 'lucide-react';
 
 interface BillRecord {
   id: string;
@@ -11,7 +11,7 @@ interface BillRecord {
   customer_name: string;
   customer_mobile: string;
   salesman_name?: string;
-  payment_mode?: string; // <--- Added payment_mode field
+  payment_mode?: string;
   subtotal: number;
   discount_value: number;
   grand_total: number;
@@ -58,6 +58,49 @@ export default function BillHistoryLog() {
       }
     } catch (err: any) {
       alert("Failed to update salesman: " + err.message);
+    }
+  };
+
+  // Update Payment Mode directly in database & state
+  const handlePaymentModeChange = async (billId: string, newMode: string) => {
+    try {
+      const { error } = await supabase
+        .from('bills')
+        .update({ payment_mode: newMode })
+        .eq('id', billId);
+
+      if (error) throw error;
+
+      setBills(prev =>
+        prev.map(b => (b.id === billId ? { ...b, payment_mode: newMode } : b))
+      );
+
+      if (selectedBill && selectedBill.id === billId) {
+        setSelectedBill(prev => prev ? { ...prev, payment_mode: newMode } : null);
+      }
+    } catch (err: any) {
+      alert("Failed to update payment mode: " + err.message);
+    }
+  };
+
+  // Delete Bill & associated items
+  const handleDeleteBill = async (billId: string, invoiceNum: number) => {
+    if (!window.confirm(`Are you sure you want to delete Invoice #${invoiceNum}?`)) {
+      return;
+    }
+
+    try {
+      await supabase.from('bill_items').delete().eq('bill_id', billId);
+      const { error } = await supabase.from('bills').delete().eq('id', billId);
+
+      if (error) throw error;
+
+      setBills(prev => prev.filter(b => b.id !== billId));
+      if (selectedBill?.id === billId) setSelectedBill(null);
+
+      alert(`Invoice #${invoiceNum} deleted successfully.`);
+    } catch (err: any) {
+      alert("Error deleting bill: " + err.message);
     }
   };
 
@@ -111,7 +154,7 @@ export default function BillHistoryLog() {
               <th className="p-3">Invoice ID</th>
               <th className="p-3">Customer Info</th>
               <th className="p-3">Salesman</th>
-              <th className="p-3">Payment Mode</th> {/* <--- ADDED COLUMN HEADER */}
+              <th className="p-3">Payment Mode</th>
               <th className="p-3">Date</th>
               <th className="p-3 text-right">Total Discount</th>
               <th className="p-3 text-right">Paid Amount</th>
@@ -126,61 +169,85 @@ export default function BillHistoryLog() {
                 </td>
               </tr>
             ) : (
-              filteredBills.map(b => (
-                <tr key={b.id} className="hover:bg-slate-50">
-                  <td className="p-3 font-mono font-bold text-violet-700">#{b.invoice_number}</td>
-                  <td className="p-3">
-                    <p className="font-bold text-slate-800">{b.customer_name}</p>
-                    <p className="text-[10px] text-slate-400">{b.customer_mobile || 'No Mobile'}</p>
-                  </td>
+              filteredBills.map(b => {
+                const isOnline = (b.payment_mode || 'Cash').toLowerCase() === 'online' || (b.payment_mode || '').toLowerCase() === 'upi';
 
-                  {/* EDITABLE SALESMAN DROPDOWN */}
-                  <td className="p-3">
-                    <div className="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 border border-slate-300 px-2 py-1 rounded-lg transition">
-                      <UserCheck className="w-3.5 h-3.5 text-violet-600 shrink-0"/>
-                      <select
-                        value={b.salesman_name || ''}
-                        onChange={(e) => handleSalesmanChange(b.id, e.target.value)}
-                        className="bg-transparent text-slate-800 text-[11px] font-bold focus:outline-none cursor-pointer pr-1"
+                return (
+                  <tr key={b.id} className="hover:bg-slate-50">
+                    <td className="p-3 font-mono font-bold text-violet-700">#{b.invoice_number}</td>
+                    <td className="p-3">
+                      <p className="font-bold text-slate-800">{b.customer_name}</p>
+                      <p className="text-[10px] text-slate-400">{b.customer_mobile || 'No Mobile'}</p>
+                    </td>
+
+                    {/* EDITABLE SALESMAN DROPDOWN */}
+                    <td className="p-3">
+                      <div className="inline-flex items-center gap-1 bg-slate-100 hover:bg-slate-200 border border-slate-300 px-2 py-1 rounded-lg transition">
+                        <UserCheck className="w-3.5 h-3.5 text-violet-600 shrink-0"/>
+                        <select
+                          value={b.salesman_name || ''}
+                          onChange={(e) => handleSalesmanChange(b.id, e.target.value)}
+                          className="bg-transparent text-slate-800 text-[11px] font-bold focus:outline-none cursor-pointer pr-1"
+                        >
+                          <option value="">-- Select Salesman --</option>
+                          {SALESMEN_LIST.map((name) => (
+                            <option key={name} value={name}>
+                              {name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </td>
+
+                    {/* EDITABLE PAYMENT MODE DROPDOWN */}
+                    <td className="p-3">
+                      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg border transition ${
+                        isOnline
+                          ? 'bg-violet-50 border-violet-200 text-violet-700'
+                          : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                      }`}>
+                        {isOnline ? <CreditCard className="w-3.5 h-3.5 shrink-0" /> : <Wallet className="w-3.5 h-3.5 shrink-0" />}
+                        <select
+                          value={b.payment_mode || 'Cash'}
+                          onChange={(e) => handlePaymentModeChange(b.id, e.target.value)}
+                          className="bg-transparent font-bold text-[11px] uppercase focus:outline-none cursor-pointer"
+                        >
+                          <option value="Cash" className="bg-white text-black">Cash</option>
+                          <option value="Online" className="bg-white text-black">Online</option>
+                        </select>
+                      </div>
+                    </td>
+
+                    <td className="p-3 text-slate-500">{new Date(b.created_at).toLocaleDateString('en-IN')}</td>
+                    <td className="p-3 text-right text-red-500">₹{Number(b.discount_value || 0).toFixed(2)}</td>
+                    <td className="p-3 text-right font-black text-slate-900">₹{Number(b.grand_total).toFixed(2)}</td>
+                    
+                    {/* ACTIONS COLUMN: VIEW & DELETE */}
+                    <td className="p-3 text-center space-x-1">
+                      <button 
+                        onClick={() => handleViewBillDetails(b)} 
+                        className="p-1.5 bg-slate-100 hover:bg-violet-100 hover:text-violet-700 rounded-lg text-slate-600 transition inline-flex items-center"
+                        title="View & Print Receipt"
                       >
-                        <option value="">-- Select Salesman --</option>
-                        {SALESMEN_LIST.map((name) => (
-                          <option key={name} value={name}>
-                            {name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </td>
-
-                  {/* PAYMENT MODE BADGE COLUMN */}
-                  <td className="p-3">
-                    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${
-                      (b.payment_mode || 'Cash').toLowerCase() === 'online' || (b.payment_mode || '').toLowerCase() === 'upi'
-                        ? 'bg-violet-50 text-violet-700 border-violet-200'
-                        : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                    }`}>
-                      <CreditCard className="w-3 h-3" />
-                      {b.payment_mode || 'Cash'}
-                    </span>
-                  </td>
-
-                  <td className="p-3 text-slate-500">{new Date(b.created_at).toLocaleDateString('en-IN')}</td>
-                  <td className="p-3 text-right text-red-500">₹{Number(b.discount_value || 0).toFixed(2)}</td>
-                  <td className="p-3 text-right font-black text-slate-900">₹{Number(b.grand_total).toFixed(2)}</td>
-                  <td className="p-3 text-center space-x-2">
-                    <button onClick={() => handleViewBillDetails(b)} className="p-1.5 bg-slate-100 hover:bg-violet-100 hover:text-violet-700 rounded-lg text-slate-600 transition inline-flex items-center">
-                      <Eye className="w-3.5 h-3.5"/>
-                    </button>
-                  </td>
-                </tr>
-              ))
+                        <Eye className="w-3.5 h-3.5"/>
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteBill(b.id, b.invoice_number)} 
+                        className="p-1.5 bg-slate-100 hover:bg-red-100 hover:text-red-600 rounded-lg text-slate-600 transition inline-flex items-center"
+                        title="Delete Bill"
+                      >
+                        <Trash2 className="w-3.5 h-3.5"/>
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
 
-      {/* Receipt Detail Preview & Reprint Sheet Block Panel */}
+      {/* Receipt Detail Preview & Reprint Modal */}
       {selectedBill && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 print:static print:bg-white print:p-0">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto print:shadow-none print:p-0 print:max-h-full">
@@ -199,7 +266,7 @@ export default function BillHistoryLog() {
                 customerName={selectedBill.customer_name}
                 customerMobile={selectedBill.customer_mobile}
                 salesmanName={selectedBill.salesman_name || ''}
-                paymentMode={selectedBill.payment_mode || 'Cash'} // <--- Passed paymentMode here
+                paymentMode={selectedBill.payment_mode || 'Cash'}
                 items={billItems.length > 0 ? billItems : [{product_name: "Loading items...", quantity: 1, price: selectedBill.grand_total}]}
                 subtotal={selectedBill.subtotal}
                 discountValue={selectedBill.discount_value}
