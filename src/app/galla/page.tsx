@@ -31,9 +31,92 @@ export default function GallaPage() {
   const [isSaving, setIsSaving] = useState<boolean>(false);
 
   useEffect(() => {
+    // 1. Run automatic midnight back-saver check on load (Guarantees no duplicates)
+    autoSaveYesterdayGallaIfNeeded();
     fetchTodayData();
     fetchGallaHistory();
   }, []);
+
+  // AUTOMATIC MIDNIGHT GALLA SAVER
+  const autoSaveYesterdayGallaIfNeeded = async () => {
+    try {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yStr = yesterday.toISOString().split('T')[0];
+
+      // Check if yesterday's log already exists to avoid duplicates
+      const { data: existingLog } = await supabase
+        .from('galla_logs')
+        .select('id')
+        .eq('date', yStr)
+        .maybeSingle();
+
+      if (existingLog) return; 
+
+      const dayStart = `${yStr}T00:00:00.000Z`;
+      const dayEnd = `${yStr}T23:59:59.999Z`;
+
+      // Fetch yesterday's bills
+      const { data: billsData } = await supabase
+        .from('bills')
+        .select('grand_total, payment_mode')
+        .gte('created_at', dayStart)
+        .lte('created_at', dayEnd);
+
+      let yCashSales = 0;
+      let yOnlineSales = 0;
+      billsData?.forEach((b) => {
+        const amt = Number(b.grand_total) || 0;
+        if ((b.payment_mode || '').toLowerCase() === 'online' || (b.payment_mode || '').toLowerCase() === 'upi') {
+          yOnlineSales += amt;
+        } else {
+          yCashSales += amt;
+        }
+      });
+
+      // Fetch yesterday's expenses
+      const { data: expData } = await supabase
+        .from('expenses')
+        .select('amount, payment_method')
+        .gte('created_at', dayStart)
+        .lte('created_at', dayEnd);
+
+      let yCashExp = 0;
+      let yOnlineExp = 0;
+      expData?.forEach((e) => {
+        const amt = Number(e.amount) || 0;
+        if ((e.payment_method || '').toLowerCase() === 'online') {
+          yOnlineExp += amt;
+        } else {
+          yCashExp += amt;
+        }
+      });
+
+      const totalSales = yCashSales + yOnlineSales;
+      const totalExp = yCashExp + yOnlineExp;
+      const netCash = yCashSales - yCashExp;
+
+      // Insert yesterday's record automatically
+      await supabase.from('galla_logs').insert([
+        {
+          date: yStr,
+          total_sales: totalSales,
+          total_expenses: totalExp,
+          cash_sales: yCashSales,
+          online_sales: yOnlineSales,
+          cash_expenses: yCashExp,
+          online_expenses: yOnlineExp,
+          extra_expenses: 0,
+          net_cash: netCash,
+          notes: 'Auto-saved at midnight',
+        },
+      ]);
+      
+      fetchGallaHistory();
+    } catch (err) {
+      console.error("Auto midnight galla background save error:", err);
+    }
+  };
 
   const fetchTodayData = async () => {
     const now = new Date();
@@ -53,7 +136,7 @@ export default function GallaPage() {
 
       billsData.forEach((b) => {
         const amt = Number(b.grand_total) || 0;
-        if (b.payment_mode === 'Online') {
+        if ((b.payment_mode || '').toLowerCase() === 'online' || (b.payment_mode || '').toLowerCase() === 'upi') {
           onlineTotal += amt;
         } else {
           cashTotal += amt; // Default Cash
@@ -77,7 +160,7 @@ export default function GallaPage() {
 
       expData.forEach((e) => {
         const amt = Number(e.amount) || 0;
-        if (e.payment_method === 'Online') {
+        if ((e.payment_method || '').toLowerCase() === 'online') {
           expOnline += amt;
         } else {
           expCash += amt;
