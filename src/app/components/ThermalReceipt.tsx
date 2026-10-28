@@ -177,7 +177,7 @@ export default function ThermalReceipt({
         </p>
 
         <p className="text-[9px] text-gray-500">
-          Software by Shree Ji
+          Software by MithTechX
         </p>
       </div>
     </div>
