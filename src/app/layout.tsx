@@ -2,7 +2,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, ShoppingBag, History, LogOut, Tags, Lock, User, TrendingUp, CalendarCheck, Receipt, Wallet, Award } from 'lucide-react';
+import { 
+  LayoutDashboard, 
+  ShoppingBag, 
+  History, 
+  LogOut, 
+  Tags, 
+  Lock, 
+  User, 
+  TrendingUp, 
+  CalendarCheck, 
+  Receipt, 
+  Wallet, 
+  Award, 
+  MessageSquare 
+} from 'lucide-react';
 import './globals.css';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -48,7 +62,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     { name: 'Attendance', path: '/attendance', icon: CalendarCheck },
     { name: 'Expenses', path: '/expenses', icon: Receipt },
     { name: 'Commission', path: '/commission', icon: Award },
-{ name: 'Broadcast', path: '/broadcast', icon: MessageSquare },
+    { name: 'Broadcast', path: '/broadcast', icon: MessageSquare },
   ];
 
   if (!isAuthenticated) {
