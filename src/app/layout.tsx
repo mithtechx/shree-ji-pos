@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, ShoppingBag, History, LogOut, Tags, Lock, User, TrendingUp, CalendarCheck, Receipt, Wallet, Package, ShoppingCart, Users, Award } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, History, LogOut, Tags, Lock, User, TrendingUp, CalendarCheck, Receipt, Wallet, Award } from 'lucide-react';
 import './globals.css';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -47,7 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     { name: 'Galla', path: '/galla', icon: Wallet },
     { name: 'Attendance', path: '/attendance', icon: CalendarCheck },
     { name: 'Expenses', path: '/expenses', icon: Receipt },
-    { name: 'Commission', href: '/commission', icon: Award },
+    { name: 'Commission', path: '/commission', icon: Award },
   ];
 
   if (!isAuthenticated) {
