@@ -47,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     { name: 'Galla', path: '/galla', icon: Wallet },
     { name: 'Attendance', path: '/attendance', icon: CalendarCheck },
     { name: 'Expenses', path: '/expenses', icon: Receipt },
+    { name: 'Commission', href: '/commission', icon: Award },
   ];
 
   if (!isAuthenticated) {
