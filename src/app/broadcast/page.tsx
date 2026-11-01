@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Send, Users, Image as ImageIcon, CheckCircle, MessageSquare } from 'lucide-react';
+import { Send, Users, Image as ImageIcon, CheckCircle, MessageSquare, CheckSquare, Square } from 'lucide-react';
 
 interface CustomerContact {
   customer_name: string;
@@ -11,6 +11,7 @@ interface CustomerContact {
 
 export default function BroadcastPage() {
   const [contacts, setContacts] = useState<CustomerContact[]>([]);
+  const [selectedMobiles, setSelectedMobiles] = useState<Set<string>>(new Set());
   const [message, setMessage] = useState<string>('Greetings from Shree Ji Collection! 🛍️ Check out our latest arrivals!');
   const [imageUrl, setImageUrl] = useState<string>('');
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -39,28 +40,52 @@ export default function BroadcastPage() {
           });
         }
       });
-      setContacts(Array.from(map.values()));
+      const uniqueList = Array.from(map.values()) as CustomerContact[];
+      setContacts(uniqueList);
+      // Select all by default
+      setSelectedMobiles(new Set(uniqueList.map(c => c.customer_mobile)));
     }
     setLoading(false);
   };
 
-  // Start automated batch queue right from the platform UI
-  const startBatchBroadcast = () => {
-    if (contacts.length === 0) return;
-    setIsSendingBatch(true);
-    setCurrentIndex(0);
-    sendNextCustomer(0);
+  const toggleSelectAll = () => {
+    if (selectedMobiles.size === contacts.length) {
+      setSelectedMobiles(new Set());
+    } else {
+      setSelectedMobiles(new Set(contacts.map(c => c.customer_mobile)));
+    }
   };
 
-  const sendNextCustomer = (index: number) => {
-    if (index >= contacts.length) {
+  const toggleSingleSelection = (mobile: string) => {
+    const updated = new Set(selectedMobiles);
+    if (updated.has(mobile)) {
+      updated.delete(mobile);
+    } else {
+      updated.add(mobile);
+    }
+    setSelectedMobiles(updated);
+  };
+
+  // Start batch broadcast for either all or selected subset
+  const startBatchBroadcast = (targetList: CustomerContact[]) => {
+    if (targetList.length === 0) {
+      alert('Please select at least one customer to message.');
+      return;
+    }
+    setIsSendingBatch(true);
+    setCurrentIndex(0);
+    sendNextCustomer(0, targetList);
+  };
+
+  const sendNextCustomer = (index: number, list: CustomerContact[]) => {
+    if (index >= list.length) {
       setIsSendingBatch(false);
       alert('🎉 Bulk broadcast queue finished successfully!');
       return;
     }
 
     setCurrentIndex(index);
-    const contact = contacts[index];
+    const contact = list[index];
     const phone = `91${contact.customer_mobile}`;
     
     let fullText = `Hello ${contact.customer_name}!\n\n${message}`;
@@ -70,17 +95,19 @@ export default function BroadcastPage() {
 
     const encoded = encodeURIComponent(fullText);
     
-    // Opens WhatsApp Web tab for each customer sequentially
+    // Opens WhatsApp Web tab sequentially
     window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encoded}`, '_blank');
 
-    // Automatically move to the next customer after 4 seconds
+    // Move to next after 4 seconds
     setTimeout(() => {
-      sendNextCustomer(index + 1);
+      sendNextCustomer(index + 1, list);
     }, 4000);
   };
 
+  const selectedContactsList = contacts.filter(c => selectedMobiles.has(c.customer_mobile));
+
   return (
-    <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-6 max-w-5xl mx-auto">
+    <div className="p-6 bg-white rounded-2xl border border-slate-200 shadow-sm space-y-6 max-w-6xl mx-auto">
       <div className="flex justify-between items-center border-b pb-4">
         <div>
           <h1 className="text-xl font-black text-slate-800 flex items-center gap-2">
@@ -88,8 +115,13 @@ export default function BroadcastPage() {
           </h1>
           <p className="text-xs text-slate-500 font-medium">Auto-extracted from your bill history database</p>
         </div>
-        <div className="bg-violet-50 text-violet-700 px-4 py-2 rounded-xl text-xs font-bold border border-violet-200 flex items-center gap-2">
-          <Users className="w-4 h-4" /> Total Unique Customers: {contacts.length}
+        <div className="flex items-center gap-3">
+          <div className="bg-violet-50 text-violet-700 px-4 py-2 rounded-xl text-xs font-bold border border-violet-200 flex items-center gap-2">
+            <Users className="w-4 h-4" /> Total Unique: {contacts.length}
+          </div>
+          <div className="bg-emerald-50 text-emerald-700 px-4 py-2 rounded-xl text-xs font-bold border border-emerald-200 flex items-center gap-2">
+            <CheckCircle className="w-4 h-4" /> Selected: {selectedMobiles.size}
+          </div>
         </div>
       </div>
 
@@ -121,44 +153,8 @@ export default function BroadcastPage() {
             />
           </div>
 
-          <button
-            onClick={startBatchBroadcast}
-            disabled={isSendingBatch || contacts.length === 0}
-            className={`w-full py-3.5 text-white font-bold text-sm rounded-xl shadow transition flex items-center justify-center gap-2 ${
-              isSendingBatch ? 'bg-emerald-600 animate-pulse' : 'bg-violet-600 hover:bg-violet-700'
-            }`}
-          >
-            <Send className="w-4 h-4" />
-            {isSendingBatch ? `Sending (${currentIndex + 1}/${contacts.length})...` : '🚀 Send to All Customers'}
-          </button>
-        </div>
-
-        {/* Target Contacts Preview Table */}
-        <div className="md:col-span-2 border rounded-xl overflow-hidden bg-slate-50">
-          <div className="p-3 bg-slate-100 border-b font-bold text-xs uppercase text-slate-600">
-            Target Audience Preview ({contacts.length} numbers)
-          </div>
-          <div className="max-h-[400px] overflow-y-auto divide-y">
-            {loading ? (
-              <div className="p-8 text-center text-slate-400 text-sm">Fetching customer numbers from bills...</div>
-            ) : contacts.length === 0 ? (
-              <div className="p-8 text-center text-slate-400 text-sm">No mobile numbers found in bill history yet.</div>
-            ) : (
-              contacts.map((c, i) => (
-                <div key={i} className={`p-3 flex items-center justify-between text-sm ${currentIndex === i && isSendingBatch ? 'bg-violet-100' : 'bg-white'}`}>
-                  <div>
-                    <span className="font-bold text-slate-800">{c.customer_name}</span>
-                    <span className="text-xs text-slate-500 ml-2 font-mono">+91 {c.customer_mobile}</span>
-                  </div>
-                  {currentIndex === i && isSendingBatch && (
-                    <span className="text-xs font-bold text-violet-600 animate-bounce">Sending now...</span>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
+          <div className="space-y-2 pt-2">
+            <button
+              onClick={() => startBatchBroadcast(contacts)}
+              disabled={isSendingBatch || contacts.length === 0}
+              className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify
