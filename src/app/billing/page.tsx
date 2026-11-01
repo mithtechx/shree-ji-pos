@@ -13,7 +13,7 @@ interface CartItem {
   barcode: string;
 }
 
-const SALESMEN = ['Rahul', 'Akash', 'Ashish', 'Sales 4', 'Sales 5'];
+const SALESMEN = ['Rahul', 'Akash', 'Pavan', 'Junaid', 'Sales 5'];
 
 export default function StandaloneBilling() {
   const [cart, setCart] = useState<CartItem[]>([]);
