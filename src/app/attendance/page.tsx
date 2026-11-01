@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { CalendarCheck, Save, Users, Calendar } from 'lucide-react';
 
-const SALESMEN = ['Rahul', 'Akash', 'Ashish', 'Sales 4', 'Sales 5'];
+const SALESMEN = ['Rahul', 'Akash', 'Pavan', 'Junaid', 'Sales 5'];
 
 export default function StaffAttendancePage() {
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
