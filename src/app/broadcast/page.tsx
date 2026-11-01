@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { Send, Users, Image as ImageIcon, CheckCircle, MessageSquare, CheckSquare, Square } from 'lucide-react';
+import { Send, Users, Image as ImageIcon, CheckCircle, MessageSquare, CheckSquare, Square, ArrowRight } from 'lucide-react';
 
 interface CustomerContact {
   customer_name: string;
@@ -14,8 +14,11 @@ export default function BroadcastPage() {
   const [selectedMobiles, setSelectedMobiles] = useState<Set<string>>(new Set());
   const [message, setMessage] = useState<string>('Greetings from Shree Ji Collection! 🛍️ Check out our latest arrivals!');
   const [imageUrl, setImageUrl] = useState<string>('');
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
-  const [isSendingBatch, setIsSendingBatch] = useState<boolean>(false);
+  
+  // Interactive Queue States
+  const [activeQueue, setActiveQueue] = useState<CustomerContact[]>([]);
+  const [queueIndex, setQueueIndex] = useState<number>(0);
+  const [isQueueActive, setIsQueueActive] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -42,7 +45,6 @@ export default function BroadcastPage() {
       });
       const uniqueList = Array.from(map.values()) as CustomerContact[];
       setContacts(uniqueList);
-      // Select all by default
       setSelectedMobiles(new Set(uniqueList.map(c => c.customer_mobile)));
     }
     setLoading(false);
@@ -66,42 +68,37 @@ export default function BroadcastPage() {
     setSelectedMobiles(updated);
   };
 
-  // Start batch broadcast for either all or selected subset
-  const startBatchBroadcast = (targetList: CustomerContact[]) => {
-    if (targetList.length === 0) {
-      alert('Please select at least one customer to message.');
+  // Start Safe Queue Session
+  const startQueue = (list: CustomerContact[]) => {
+    if (list.length === 0) {
+      alert('Please select at least one customer.');
       return;
     }
-    setIsSendingBatch(true);
-    setCurrentIndex(0);
-    sendNextCustomer(0, targetList);
+    setActiveQueue(list);
+    setQueueIndex(0);
+    setIsQueueActive(true);
+    openChatWindow(list[0], message, imageUrl);
   };
 
-  const sendNextCustomer = (index: number, list: CustomerContact[]) => {
-    if (index >= list.length) {
-      setIsSendingBatch(false);
-      alert('🎉 Bulk broadcast queue finished successfully!');
+  const openChatWindow = (contact: CustomerContact, msgTemplate: string, img: string) => {
+    const phone = `91${contact.customer_mobile}`;
+    let fullText = `Hello ${contact.customer_name}!\n\n${msgTemplate}`;
+    if (img.trim()) {
+      fullText += `\n\n📷 Promo Image: ${img.trim()}`;
+    }
+    const encoded = encodeURIComponent(fullText);
+    window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encoded}`, '_blank');
+  };
+
+  const handleNextInQueue = () => {
+    const nextIdx = queueIndex + 1;
+    if (nextIdx >= activeQueue.length) {
+      setIsQueueActive(false);
+      alert('🎉 All scheduled customer chats have been processed successfully!');
       return;
     }
-
-    setCurrentIndex(index);
-    const contact = list[index];
-    const phone = `91${contact.customer_mobile}`;
-    
-    let fullText = `Hello ${contact.customer_name}!\n\n${message}`;
-    if (imageUrl.trim()) {
-      fullText += `\n\n📷 Promo Image: ${imageUrl.trim()}`;
-    }
-
-    const encoded = encodeURIComponent(fullText);
-    
-    // Opens WhatsApp Web tab sequentially
-    window.open(`https://web.whatsapp.com/send?phone=${phone}&text=${encoded}`, '_blank');
-
-    // Move to next after 4 seconds
-    setTimeout(() => {
-      sendNextCustomer(index + 1, list);
-    }, 4000);
+    setQueueIndex(nextIdx);
+    openChatWindow(activeQueue[nextIdx], message, imageUrl);
   };
 
   const selectedContactsList = contacts.filter(c => selectedMobiles.has(c.customer_mobile));
@@ -113,7 +110,7 @@ export default function BroadcastPage() {
           <h1 className="text-xl font-black text-slate-800 flex items-center gap-2">
             <MessageSquare className="text-violet-600 w-5 h-5" /> Bulk WhatsApp Campaign & Greetings
           </h1>
-          <p className="text-xs text-slate-500 font-medium">Auto-extracted from your bill history database</p>
+          <p className="text-xs text-slate-500 font-medium">Browser-Safe Sequential Dispatcher</p>
         </div>
         <div className="flex items-center gap-3">
           <div className="bg-violet-50 text-violet-700 px-4 py-2 rounded-xl text-xs font-bold border border-violet-200 flex items-center gap-2">
@@ -124,6 +121,24 @@ export default function BroadcastPage() {
           </div>
         </div>
       </div>
+
+      {/* ACTIVE QUEUE BANNER */}
+      {isQueueActive && (
+        <div className="bg-violet-900 text-white p-4 rounded-xl flex items-center justify-between shadow-lg animate-fade-in">
+          <div>
+            <span className="text-xs font-bold uppercase tracking-wider text-violet-300 block">Active Dispatch Queue</span>
+            <p className="text-sm font-bold mt-0.5">
+              Processing: <span className="text-emerald-300">{activeQueue[queueIndex]?.customer_name}</span> (+91 {activeQueue[queueIndex]?.customer_mobile}) &bull; [{queueIndex + 1} of {activeQueue.length}]
+            </p>
+          </div>
+          <button
+            onClick={handleNextInQueue}
+            className="px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs rounded-lg shadow flex items-center gap-2 transition"
+          >
+            <span>Open Next Chat</span> <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Campaign Controls */}
@@ -155,21 +170,19 @@ export default function BroadcastPage() {
 
           <div className="space-y-2 pt-2">
             <button
-              onClick={() => startBatchBroadcast(contacts)}
-              disabled={isSendingBatch || contacts.length === 0}
-              className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-2 disabled:opacity-50"
+              onClick={() => startQueue(contacts)}
+              disabled={contacts.length === 0}
+              className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-2"
             >
-              <Send className="w-4 h-4" />
-              {isSendingBatch ? 'Sending to All...' : '🚀 Send to All Customers'}
+              <Send className="w-4 h-4" /> Start Queue for All ({contacts.length})
             </button>
 
             <button
-              onClick={() => startBatchBroadcast(selectedContactsList)}
-              disabled={isSendingBatch || selectedMobiles.size === 0}
-              className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-2 disabled:opacity-50"
+              onClick={() => startQueue(selectedContactsList)}
+              disabled={selectedMobiles.size === 0}
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-2"
             >
-              <Send className="w-4 h-4" />
-              {isSendingBatch ? 'Sending to Selected...' : `🎯 Send to Selected Only (${selectedMobiles.size})`}
+              <Send className="w-4 h-4" /> Start Queue for Selected ({selectedMobiles.size})
             </button>
           </div>
         </div>
@@ -194,13 +207,14 @@ export default function BroadcastPage() {
             ) : (
               contacts.map((c, i) => {
                 const isSelected = selectedMobiles.has(c.customer_mobile);
+                const isCurrentlyActive = isQueueActive && activeQueue[queueIndex]?.customer_mobile === c.customer_mobile;
                 return (
                   <div
                     key={i}
                     onClick={() => toggleSingleSelection(c.customer_mobile)}
                     className={`p-3 flex items-center justify-between text-sm cursor-pointer transition ${
-                      currentIndex === i && isSendingBatch
-                        ? 'bg-violet-100'
+                      isCurrentlyActive
+                        ? 'bg-violet-100 border-l-4 border-violet-600'
                         : isSelected
                         ? 'bg-white hover:bg-slate-100/80'
                         : 'bg-slate-100/50 opacity-60 hover:opacity-100'
@@ -215,8 +229,10 @@ export default function BroadcastPage() {
                         <span className="text-xs text-slate-500 ml-2 font-mono">+91 {c.customer_mobile}</span>
                       </div>
                     </div>
-                    {currentIndex === i && isSendingBatch && (
-                      <span className="text-xs font-bold text-violet-600 animate-bounce">Sending now...</span>
+                    {isCurrentlyActive && (
+                      <span className="px-2.5 py-1 bg-violet-600 text-white rounded-md text-[10px] font-black uppercase animate-pulse">
+                        Active Dispatch
+                      </span>
                     )}
                   </div>
                 );
