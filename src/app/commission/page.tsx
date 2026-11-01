@@ -15,7 +15,7 @@ interface BillRecord {
   created_at: string;
 }
 
-const SALESMEN_LIST = ['Rahul', 'Akash', 'Ashish', 'Sales 4', 'Sales 5'];
+const SALESMEN_LIST = ['Rahul', 'Akash', 'Pavan', 'Junaid', 'Sales 5'];
 
 export default function SalesmanCommissionPage() {
   const [bills, setBills] = useState<BillRecord[]>([]);
