@@ -157,4 +157,74 @@ export default function BroadcastPage() {
             <button
               onClick={() => startBatchBroadcast(contacts)}
               disabled={isSendingBatch || contacts.length === 0}
-              className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify
+              className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <Send className="w-4 h-4" />
+              {isSendingBatch ? 'Sending to All...' : '🚀 Send to All Customers'}
+            </button>
+
+            <button
+              onClick={() => startBatchBroadcast(selectedContactsList)}
+              disabled={isSendingBatch || selectedMobiles.size === 0}
+              className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow transition flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              <Send className="w-4 h-4" />
+              {isSendingBatch ? 'Sending to Selected...' : `🎯 Send to Selected Only (${selectedMobiles.size})`}
+            </button>
+          </div>
+        </div>
+
+        {/* Target Contacts Preview & Selection Table */}
+        <div className="md:col-span-2 border rounded-xl overflow-hidden bg-slate-50 flex flex-col">
+          <div className="p-3 bg-slate-100 border-b font-bold text-xs uppercase text-slate-600 flex justify-between items-center">
+            <span>Target Audience Preview ({contacts.length} numbers)</span>
+            <button
+              onClick={toggleSelectAll}
+              className="text-violet-600 hover:underline text-xs font-bold flex items-center gap-1"
+            >
+              {selectedMobiles.size === contacts.length ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4" />}
+              {selectedMobiles.size === contacts.length ? 'Deselect All' : 'Select All'}
+            </button>
+          </div>
+          <div className="max-h-[450px] overflow-y-auto divide-y flex-1">
+            {loading ? (
+              <div className="p-8 text-center text-slate-400 text-sm">Fetching customer numbers from bills...</div>
+            ) : contacts.length === 0 ? (
+              <div className="p-8 text-center text-slate-400 text-sm">No mobile numbers found in bill history yet.</div>
+            ) : (
+              contacts.map((c, i) => {
+                const isSelected = selectedMobiles.has(c.customer_mobile);
+                return (
+                  <div
+                    key={i}
+                    onClick={() => toggleSingleSelection(c.customer_mobile)}
+                    className={`p-3 flex items-center justify-between text-sm cursor-pointer transition ${
+                      currentIndex === i && isSendingBatch
+                        ? 'bg-violet-100'
+                        : isSelected
+                        ? 'bg-white hover:bg-slate-100/80'
+                        : 'bg-slate-100/50 opacity-60 hover:opacity-100'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <button type="button" className="text-violet-600">
+                        {isSelected ? <CheckSquare className="w-4 h-4" /> : <Square className="w-4 h-4 text-slate-400" />}
+                      </button>
+                      <div>
+                        <span className="font-bold text-slate-800">{c.customer_name}</span>
+                        <span className="text-xs text-slate-500 ml-2 font-mono">+91 {c.customer_mobile}</span>
+                      </div>
+                    </div>
+                    {currentIndex === i && isSendingBatch && (
+                      <span className="text-xs font-bold text-violet-600 animate-bounce">Sending now...</span>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
