@@ -2,8 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { LayoutDashboard, ShoppingBag, History, LogOut, Tags, Lock, User, TrendingUp, CalendarCheck, Receipt, Wallet } from 'lucide-react';
-import { LayoutDashboard, Package, ShoppingCart, History, TrendingUp, Wallet, Users, Receipt, Award } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, History, LogOut, Tags, Lock, User, TrendingUp, CalendarCheck, Receipt, Wallet, Package, ShoppingCart, Users, Award } from 'lucide-react';
 import './globals.css';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
