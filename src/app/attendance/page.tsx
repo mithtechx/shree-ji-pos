@@ -40,14 +40,18 @@ export default function StaffAttendancePage() {
   };
 
   const fetchMonthlySummary = async () => {
+    const [year, month] = selectedMonth.split('-').map(Number);
     const startDate = `${selectedMonth}-01`;
-    const endDate = `${selectedMonth}-31`;
+    // Automatically find the last day of the selected month
+    const lastDay = new Date(year, month, 0).getDate();
+    const endDate = `${selectedMonth}-${lastDay}`;
 
     const { data } = await supabase
       .from('staff_attendance')
       .select('*')
       .gte('date', startDate)
-      .lte('date', endDate);
+      .lte('date', endDate)
+      .order('date', { ascending: false });
 
     setMonthlyRecords(data || []);
   };
